@@ -31,7 +31,7 @@ Nothing else needs installing. The Gradle wrapper (`gradlew` / `gradlew.bat`) is
 Clone and build:
 
 ```bash
-git clone <this repo's URL> GolemAddons
+git clone https://github.com/TornadoTheQT/GolemAddons.git
 cd GolemAddons
 ./gradlew build          # Windows PowerShell/cmd: .\gradlew.bat build
 ```
