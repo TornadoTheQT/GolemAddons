@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "golemaddons-cosmetics",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-01",
+	"workers_dev": true,
+	"kv_namespaces": [
+		{
+			// Paste the id printed by `npx wrangler kv namespace create COSMETICS` (see README.md).
+			"binding": "COSMETICS",
+			"id": "859a667f8d1a41379900b22a75d2f615"
+		}
+	],
+	// Party finder: one Durable Object per Minecraft server. SQLite-backed classes are included in the free plan.
+	"durable_objects": {
+		"bindings": [{ "name": "PARTIES", "class_name": "PartyRoom" }]
+	},
+	"migrations": [{ "tag": "v1-party-finder", "new_sqlite_classes": ["PartyRoom"] }],
+	// Request logs are visible only to you (the account owner) in the Cloudflare dashboard.
+	"observability": { "enabled": true }
+	// Secrets are NOT stored here. Set them with:
+	//   npx wrangler secret put TOKEN_SECRET
+	//   npx wrangler secret put ADMIN_SECRET   (optional, enables the moderation endpoint)
+}

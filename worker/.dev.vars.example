@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `npm run dev` (local only; never commit .dev.vars).
+# Generate values with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+TOKEN_SECRET=
+ADMIN_SECRET=

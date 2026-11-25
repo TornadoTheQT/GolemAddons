@@ -1,0 +1,28 @@
+{
+	"schemaVersion": 1,
+	"id": "golemaddons",
+	"version": "${version}",
+	"name": "GolemAddons",
+	"description": "Client-side utilities for Dragsim",
+	"icon": "assets/golemaddons/icon.png",
+	"authors": ["qtTornado"],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["com.golemaddons.GolemAddonsClient"],
+		"modmenu": ["com.golemaddons.ui.ModMenuIntegration"]
+	},
+	"mixins": ["golemaddons.mixins.json"],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	},
+	"custom": {
+		"golemaddons:cosmetics_api": "${cosmetics_api_url}"
+	}
+}

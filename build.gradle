@@ -1,0 +1,65 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+repositories {
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/releases/'
+		content { includeGroup 'com.terraformersmc' }
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Optional integration: only compiled against, never required at runtime.
+	compileOnly("com.terraformersmc:modmenu:${project.modmenu_version}") { transitive = false }
+
+	testImplementation platform("org.junit:junit-bom:${project.junit_version}")
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.junit.jupiter:junit-jupiter-params'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+	withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = 'UTF-8'
+}
+
+test {
+	useJUnitPlatform()
+}
+
+// In-game smoke test: `./gradlew runClientGameTest` starts the client, creates a test world, opens each menu and
+// saves screenshots to build/run/clientGameTest/screenshots. Not part of the regular build.
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "golemaddons-gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+processResources {
+	def version = project.version
+	// The shared cosmetics server baked into the jar (see worker/README.md). Blank = cosmetics off until set.
+	def cosmeticsApiUrl = project.findProperty("cosmetics_api_url") ?: ""
+	inputs.property "version", version
+	inputs.property "cosmeticsApiUrl", cosmeticsApiUrl
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version, "cosmetics_api_url": cosmeticsApiUrl
+	}
+}

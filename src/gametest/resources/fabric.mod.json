@@ -1,0 +1,13 @@
+{
+	"schemaVersion": 1,
+	"id": "golemaddons-gametest",
+	"version": "1.0.0",
+	"name": "GolemAddons client game tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": ["com.golemaddons.gametest.GolemAddonsClientGameTest"]
+	},
+	"depends": {
+		"golemaddons": "*"
+	}
+}
