@@ -110,6 +110,22 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			click(context, "golemaddons.hub.update.button");
 			context.waitTicks(60);
 			context.takeScreenshot("golemaddons-hub-update-check");
+			// Right-click opens the Updates screen with the release notes.
+			double[] icon = context.computeOnClient(mc -> {
+				for (var child : mc.screen.children()) {
+					if (child instanceof AbstractWidget w && w.getMessage().getContents() instanceof TranslatableContents t
+							&& t.getKey().equals("golemaddons.hub.update.button")) {
+						double scale = mc.getWindow().getGuiScale();
+						return new double[] {(w.getX() + w.getWidth() / 2.0) * scale, (w.getY() + w.getHeight() / 2.0) * scale};
+					}
+				}
+				throw new AssertionError("no update button");
+			});
+			context.getInput().setCursorPos(icon[0], icon[1]);
+			context.waitTick();
+			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-updates-screen");
 
 			// Party finder, and from it My Party (the create form).
 			context.setScreen(() -> new GolemHubScreen(null));

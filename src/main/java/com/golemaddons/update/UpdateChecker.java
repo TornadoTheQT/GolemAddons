@@ -79,7 +79,13 @@ public final class UpdateChecker {
 		UpdateInstaller.Located located = UpdateInstaller.locate(origin, FabricLoader.getInstance().getGameDir().resolve("mods"));
 		installer = located.installer();
 		unavailable = located.unavailable();
-		if (installer != null) worker.execute(installer::cleanUpLeftovers);
+		if (installer != null) {
+			LOGGER.info("Updates install into {}", installer.folder());
+			worker.execute(installer::cleanUpLeftovers);
+		} else {
+			LOGGER.info("Updates can't be installed from here ({}): loaded from {}, mods folder {}", unavailable, origin,
+					FabricLoader.getInstance().getGameDir().resolve("mods"));
+		}
 
 		ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
 			if (config.get().updates.checkOnStartup) check(false);

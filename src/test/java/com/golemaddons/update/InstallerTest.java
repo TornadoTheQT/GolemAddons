@@ -125,7 +125,7 @@ class InstallerTest {
 	}
 
 	@Test
-	void locateOnlyAcceptsAGolemAddonsJarDirectlyInMods() throws Exception {
+	void locateOnlyAcceptsAGolemAddonsJarInMods() throws Exception {
 		Path mods = modsWithCurrent("0.1.4");
 		assertNotNull(UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), mods).installer());
 		assertEquals(UpdateInstaller.Unavailable.NOT_A_JAR, UpdateInstaller.locate(List.of(mods), mods).unavailable());
@@ -133,6 +133,36 @@ class InstallerTest {
 				UpdateInstaller.locate(List.of(mods.resolve("fabric-api.jar")), mods).unavailable());
 		Path elsewhere = TestJars.write(temp.resolve("golemaddons-0.1.4.jar"), TestJars.modJar("golemaddons", "0.1.4"));
 		assertEquals(UpdateInstaller.Unavailable.NOT_IN_MODS, UpdateInstaller.locate(List.of(elsewhere), mods).unavailable());
+	}
+
+	/** Lunar Client keeps mods one folder down (mods/fabric-26.1.2/); updates go next to the running jar there. */
+	@Test
+	void lunarStyleSubfolderInstallsNextToTheRunningJarAndClearsOldCopies() throws Exception {
+		Path mods = Files.createDirectories(temp.resolve("lunar/mods"));
+		Path sub = Files.createDirectories(mods.resolve("fabric-26.1.2"));
+		TestJars.write(sub.resolve("golemaddons-0.1.4.jar"), TestJars.modJar("golemaddons", "0.1.4"));
+		Path running = TestJars.write(sub.resolve("golemaddons-0.1.6.jar"), TestJars.modJar("golemaddons", "0.1.6"));
+		TestJars.write(sub.resolve("fabric-api.jar"), TestJars.modJar("fabric-api", "1.0.0"));
+		TestJars.write(sub.resolve("golemaddons-notes.jar"), TestJars.modJar("someone-else", "1.0.0"));
+
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(running), mods).installer();
+		assertNotNull(installer);
+		assertEquals(sub.toRealPath(), installer.folder());
+		// Two folders down is too far.
+		Path deep = Files.createDirectories(sub.resolve("nested"));
+		Path deepJar = TestJars.write(deep.resolve("golemaddons-0.1.6.jar"), TestJars.modJar("golemaddons", "0.1.6"));
+		assertEquals(UpdateInstaller.Unavailable.NOT_IN_MODS, UpdateInstaller.locate(List.of(deepJar), mods).unavailable());
+
+		byte[] jar = TestJars.modJar("golemaddons", "0.1.7");
+		files.put("/golemaddons-0.1.7.jar", jar);
+		installer.stage(release("0.1.7", jar, TestJars.sha256(jar)), downloader, n -> { });
+		installer.swapIfStaged();
+		assertArrayEquals(jar, Files.readAllBytes(sub.resolve("golemaddons-0.1.7.jar")));
+		assertFalse(Files.exists(running));
+		assertFalse(Files.exists(sub.resolve("golemaddons-0.1.4.jar")), "an older copy left beside it is removed too");
+		assertTrue(Files.exists(sub.resolve("fabric-api.jar")));
+		assertTrue(Files.exists(sub.resolve("golemaddons-notes.jar")), "only jars that really are GolemAddons are removed");
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.7.jar")));
 	}
 
 	@Test

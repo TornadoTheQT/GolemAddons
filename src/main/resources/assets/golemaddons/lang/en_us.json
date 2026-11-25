@@ -495,7 +495,7 @@
 	"golemaddons.updates.error.download.size_mismatch": "Download stopped: the file size is wrong",
 	"golemaddons.updates.error.download.checksum": "Download rejected: it doesn't match GitHub's checksum",
 	"golemaddons.updates.unavailable.not_a_jar": "Installing needs the mod to run from a jar (not a development build).",
-	"golemaddons.updates.unavailable.not_in_mods": "The mod jar isn't directly in this game's mods folder, so install it from the release page.",
+	"golemaddons.updates.unavailable.not_in_mods": "The mod jar isn't in this game's mods folder (or a folder inside it), so install it from the release page.",
 	"golemaddons.updates.toast.title": "GolemAddons update",
 	"golemaddons.updates.toast.available": "v%s is out. Open the menu (%s) to install.",
 	"golemaddons.updates.toast.staged": "v%s is ready. Restart the game to finish.",

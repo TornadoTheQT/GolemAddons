@@ -3,6 +3,7 @@ package com.golemaddons.ui;
 import com.golemaddons.GolemAddonsClient;
 import com.golemaddons.config.GolemConfig;
 import com.golemaddons.update.Release;
+import com.golemaddons.update.ReleaseNotes;
 import com.golemaddons.update.UpdateChecker;
 import com.golemaddons.update.Versions;
 import java.util.List;
@@ -31,6 +32,9 @@ final class UpdatesScreen extends EditorScreen {
 	private int notesX1;
 	private int notesY1;
 	private int notesScroll;
+	private String renderedNotes;
+	private int renderedWidth;
+	private List<FormattedCharSequence> renderedLines = List.of();
 
 	UpdatesScreen(Screen parent) {
 		super(Component.translatable("golemaddons.updates.title"), parent);
@@ -181,11 +185,20 @@ final class UpdatesScreen extends EditorScreen {
 			graphics.text(font, Component.translatable("golemaddons.updates.notes.none"), notesX0, notesY0, UiText.DARK_GRAY);
 			return;
 		}
-		List<FormattedCharSequence> lines = font.split(Component.literal(notes), notesX1 - notesX0);
+		if (!notes.equals(renderedNotes) || notesX1 - notesX0 != renderedWidth) {
+			renderedNotes = notes;
+			renderedWidth = notesX1 - notesX0;
+			renderedLines = new java.util.ArrayList<>();
+			for (Component line : ReleaseNotes.lines(notes)) {
+				if (line.getString().isEmpty()) renderedLines.add(FormattedCharSequence.EMPTY);
+				else renderedLines.addAll(font.split(line, renderedWidth));
+			}
+		}
+		List<FormattedCharSequence> lines = renderedLines;
 		int visible = Math.max(1, (notesY1 - notesY0) / 10);
 		notesScroll = Math.min(notesScroll, Math.max(0, lines.size() - visible));
 		for (int i = 0; i < visible && notesScroll + i < lines.size(); i++) {
-			graphics.text(font, lines.get(notesScroll + i), notesX0, notesY0 + i * 10, UiText.GRAY, false);
+			graphics.text(font, lines.get(notesScroll + i), notesX0, notesY0 + i * 10, 0xFFC8C8D0, false);
 		}
 		if (lines.size() > visible) {
 			int barH = Math.max(6, (notesY1 - notesY0) * visible / lines.size());

@@ -25,12 +25,13 @@ import org.slf4j.LoggerFactory;
 public final class UpdateInstaller {
 	private static final Logger LOGGER = LoggerFactory.getLogger("golemaddons");
 	private static final Pattern PART = Pattern.compile("^golemaddons-[0-9A-Za-z.+-]{1,48}\\.jar\\.part$");
+	private static final Pattern JAR = Pattern.compile("^golemaddons-[0-9A-Za-z.+-]{1,48}\\.jar$");
 
 	/** Why installing isn't possible from this copy of the game. */
 	public enum Unavailable {
 		/** Running from a development build or a folder, not a jar. */
 		NOT_A_JAR,
-		/** The jar isn't directly in the game's mods folder (a launcher-managed or nested copy). */
+		/** The jar isn't in the game's mods folder or one folder below it (a launcher-managed or nested copy). */
 		NOT_IN_MODS
 	}
 
@@ -49,7 +50,11 @@ public final class UpdateInstaller {
 	public record Located(UpdateInstaller installer, Unavailable unavailable) {
 	}
 
-	/** {@code origin} is where the running mod was loaded from; {@code modsDir} the game's mods folder. */
+	/**
+	 * {@code origin} is where the running mod was loaded from; {@code modsDir} the game's mods folder. The jar may sit
+	 * in the mods folder itself or one folder below it: Lunar Client keeps mods in {@code mods/fabric-<version>/}.
+	 * Updates are installed next to the running jar, in whichever of the two it is.
+	 */
 	public static Located locate(List<Path> origin, Path modsDir) {
 		if (origin.size() != 1) return new Located(null, Unavailable.NOT_A_JAR);
 		try {
@@ -61,13 +66,20 @@ public final class UpdateInstaller {
 			// The jar itself was checked not to be a symlink above; resolving its parents (e.g. macOS /var -> /private/var)
 			// is needed to compare it with the real mods folder.
 			Path realJar = jar.toRealPath();
-			if (!realMods.equals(realJar.getParent()) || !JarCheck.isGolemAddons(realJar)) {
+			Path folder = realJar.getParent();
+			boolean inMods = realMods.equals(folder) || (folder != null && realMods.equals(folder.getParent()));
+			if (!inMods || !JarCheck.isGolemAddons(realJar)) {
 				return new Located(null, Unavailable.NOT_IN_MODS);
 			}
-			return new Located(new UpdateInstaller(realMods, realJar), null);
+			return new Located(new UpdateInstaller(folder, realJar), null);
 		} catch (IOException e) {
 			return new Located(null, Unavailable.NOT_IN_MODS);
 		}
+	}
+
+	/** The folder updates are installed into (where the running jar is). */
+	public Path folder() {
+		return modsDir;
 	}
 
 	/** Deletes leftover {@code golemaddons-*.jar.part} files from an earlier update. Call once at startup. */
@@ -128,6 +140,7 @@ public final class UpdateInstaller {
 			Files.delete(currentJar);
 		} catch (IOException locked) {
 			// Windows keeps the running jar locked until the game exits: finish in a helper process.
+			removeOlderCopies();
 			launchHelper();
 			return;
 		}
@@ -138,9 +151,34 @@ public final class UpdateInstaller {
 				Files.move(stagedPart, stagedFinal);
 			}
 			LOGGER.info("Installed {}; it will be used from the next start.", stagedFinal.getFileName());
+			removeOlderCopies();
 		} catch (IOException e) {
 			LOGGER.error("Could not move {} into place. Rename it to {} yourself to finish the update.",
 					stagedPart.getFileName(), stagedFinal.getFileName(), e);
+		}
+	}
+
+	/**
+	 * Other GolemAddons jars left in the same folder (say a 0.1.4 next to the 0.1.6 that was running) would load
+	 * instead of, or alongside, the update. Only files named golemaddons-*.jar that really are GolemAddons are removed.
+	 */
+	private void removeOlderCopies() {
+		List<Path> old = new ArrayList<>();
+		try (DirectoryStream<Path> dir = Files.newDirectoryStream(modsDir)) {
+			for (Path p : dir) {
+				if (p.equals(stagedFinal) || p.equals(currentJar) || !JAR.matcher(p.getFileName().toString()).matches()) continue;
+				if (Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS) && JarCheck.isGolemAddons(p)) old.add(p);
+			}
+		} catch (IOException e) {
+			return;
+		}
+		for (Path p : old) {
+			try {
+				Files.delete(p);
+				LOGGER.info("Removed the older copy {}.", p.getFileName());
+			} catch (IOException e) {
+				LOGGER.warn("Could not remove the older copy {}; delete it yourself.", p.getFileName());
+			}
 		}
 	}
 
