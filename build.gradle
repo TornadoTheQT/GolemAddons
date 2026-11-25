@@ -63,3 +63,8 @@ processResources {
 		expand "version": version, "cosmetics_api_url": cosmeticsApiUrl
 	}
 }
+
+// OdinLegacy (BSD-3-Clause) requires its notice to ship with binaries that use its code.
+jar {
+	from('THIRD_PARTY_NOTICES.md')
+}

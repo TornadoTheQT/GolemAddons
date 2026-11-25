@@ -1,13 +1,22 @@
 # GolemAddons
 
-A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the GolemAddons menu. It has six cards:
+A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the GolemAddons menu. It has four cards; the first three open a page with that category's features:
 
-- **Mining Auto-Sell**: sells items matching your own regex rules, e.g. Enchanted Obsidian.
-- **Dragon Seller**: sells dragon armor, fragments and other dragon drops. You pick which dragons. Also has the **Dragon hitboxes** switch.
-- **Sell Settings**: the sell screen title, click delay and hotbar protection, which both sellers use, plus the **Quick sell** key.
-- **Cosmetics**: a custom name and cape that every other GolemAddons player sees, on any server, with a live preview of your player.
-- **Auto Clicker**: left-clicks at a random speed between two CPS values while you hold a key.
+- **Selling**
+  - **Mining Auto-Sell**: sells items matching your own regex rules, e.g. Enchanted Obsidian.
+  - **Dragon Seller**: sells dragon armor, fragments and other dragon drops. You pick which dragons.
+  - **Sell Settings**: the sell screen title, click delay and hotbar protection, which both sellers use, plus the **Quick sell** key.
+- **QoL**
+  - **Auto Clicker**: left-clicks at a random speed between two CPS values while you hold a key.
+  - **Camera**: skip the front F5 view, set the third-person distance, and let the camera pass through blocks.
+  - **Terminals**: Floor 7 terminal solvers with a compact, recolourable GUI, wrong-click blocking and hover click.
+- **Visuals**
+  - **Cosmetics**: a custom name and cape that every other GolemAddons player sees, on any server, with a live preview of your player.
+  - **Animations**: move, rotate, scale and re-time your first-person held item, with a live preview and shareable presets.
+  - **Dragon Hitboxes**: click the tile to turn dragon hit-part outlines on or off.
 - **Party Finder**: list and join GDrag and NDrag parties with other GolemAddons players on the same server, live. Also `/gapf`.
+
+The bottom-right of the menu shows the version and a refresh button: click it to check for updates (or to install one that is ready), right-click it for update settings. A short note next to it says what happened.
 
 The menu is drawn on a fixed 640×360 layout scaled to your window, so it fills the screen the same way at any GUI scale.
 
@@ -58,7 +67,7 @@ Other useful tasks:
 ## Using it
 
 1. Press **K** (rebindable under Controls → GolemAddons) to open the menu.
-2. Open **Sell Settings** and set the **sell screen title** to a regex that matches your NPC GUI's title exactly, e.g. `Sell Items`. Nothing sells until this is set.
+2. Open **Selling → Sell Settings** and set the **sell screen title** to a regex that matches your NPC GUI's title exactly, e.g. `Sell Items`. Nothing sells until this is set.
 3. Set up what to sell:
    - **Mining Auto-Sell**: add or enable rules. Three example rules for Enchanted Obsidian, End Stone and Crying Obsidian are included, all disabled.
    - **Dragon Seller**: tick the dragons, pieces and drops to sell. Each row is the colored name with a checkbox on the right; click anywhere on the row.
@@ -107,7 +116,7 @@ Item names are matched **exactly**, e.g. `Young Dragon Helmet` or `Aspect of the
 
 ### Dragon hitboxes
 
-Turn on **Dragon hitboxes** at the top of the Dragon Seller screen (then Save), or bind **Toggle dragon hitboxes** under Controls → GolemAddons (unbound by default; the key saves the setting straight away). Off by default.
+Click the **Dragon Hitboxes** tile under **Visuals** (it saves straight away), or bind **Toggle dragon hitboxes** under Controls → GolemAddons (unbound by default; the key saves the setting straight away). Off by default.
 
 - Only ender dragons get outlines, one box per hit part (head, neck, body, wings, tail). The check is the entity type, not its name, so no other mob or player is ever outlined.
 - The part under your crosshair is red and the rest of that dragon is gold. Other dragons are teal.
@@ -151,7 +160,7 @@ Selling can't be undone, so the mod refuses to act whenever it isn't sure:
 
 Everyone running GolemAddons with the same cosmetics server sees each other's custom name and cape, on any server. Players are identified by their Minecraft account UUID.
 
-Set them in **GolemAddons → Cosmetics**: type a name or a cape link and press **Apply** (or **Reset** to remove it). A preview on the left shows your player walking and turning, with the nametag (the name you're typing, if it's valid) and your cape, custom if you have one, otherwise your normal cape. Hover over a field for the rules. The same can be done with commands:
+Set them in **GolemAddons → Visuals → Cosmetics**: type a name or a cape link and press **Apply** (or **Reset** to remove it). A preview on the left shows your player walking and turning, with the nametag (the name you're typing, if it's valid) and your cape, custom if you have one, otherwise your normal cape. Hover over a field for the rules. The same can be done with commands:
 
 ```
 /ga custom name &6&lZach          set your name (&0-9 &a-f colors, &k-o formats, &r reset, && for &)
@@ -174,7 +183,7 @@ Set them in **GolemAddons → Cosmetics**: type a name or a cape link and press 
   - The mod sends the UUIDs of players in your tab list to the cosmetics server to look up their cosmetics. Only the server owner can see those requests, and their IPs, in Cloudflare's logs.
   - Cape images are downloaded from the cosmetics server, never from the link someone typed.
   - Names containing links, IP addresses, emails or phone numbers are hidden.
-  - Turn it all off in **GolemAddons → Cosmetics**. Details are in [worker/README.md](worker/README.md#who-can-see-what).
+  - Turn it all off in **GolemAddons → Visuals → Cosmetics**. Details are in [worker/README.md](worker/README.md#who-can-see-what).
 - **Performance:**
   - Lookups are batched (up to 100 players per request), cached for 10 minutes, and never run on the game thread.
   - Each cape image is loaded once and shared by every player using it.
@@ -186,9 +195,79 @@ Set them in **GolemAddons → Cosmetics**: type a name or a cape link and press 
 
 ## Auto Clicker
 
-Open **GolemAddons → Auto Clicker**, click **Hold to click** and press the key or mouse button you want (Escape clears it; side mouse buttons work well). Set **Min** and **Max** CPS (1 to 20), then Save. In game, with no menu open, hold that key: it left-clicks at a random rate between the two values, picking a new random gap before every click.
+Open **GolemAddons → QoL → Auto Clicker**, click **Hold to click** and press the key or mouse button you want (Escape clears it; side mouse buttons work well). Set **Min** and **Max** CPS (1 to 20), then Save. In game, with no menu open, hold that key: it left-clicks at a random rate between the two values, picking a new random gap before every click.
 
 Each click is handed to Minecraft exactly like a real mouse click, so it attacks, breaks blocks and swings the normal way, including the attack cooldown. Releasing the key stops it immediately. Clicks are timed per game tick (20 per second), so 20 CPS is the maximum.
+
+## Camera
+
+**GolemAddons → QoL → Camera**. Turn on **Camera tweaks**, then any of:
+
+- **Skip front view**: F5 goes first person → behind you → first person, never the view facing you.
+- **Custom distance**: the third-person camera sits this far away (1 to 12 blocks) instead of the game's own distance (4).
+- **Clip through blocks**: in third person the camera goes through walls instead of being pulled in towards you.
+
+Only your own view changes. Your position, rotation and everything sent to the server stay exactly as in vanilla.
+
+## Terminals
+
+**GolemAddons → QoL → Terminals**. Solves all six Floor 7 terminals, recognised by their chest title:
+Click in Order, Correct All the Panes, What Starts With, Select All the Colour, Change All to Same Colour and Melody.
+
+- **Compact GUI**: the chest is replaced by a clean grid of just the puzzle, with the answer lit up. In Click in Order the
+  next three numbers are coloured, and Same Colour shows how many clicks each pane needs and with which button (L/R).
+  Turn it off to keep the normal chest with the answer highlighted on it.
+- **Block wrong clicks**: clicks that aren't part of the answer are never sent; the tile flashes red instead. In Same
+  Colour either mouse button turns a pane the short way round.
+- **Hover click**: clicks a correct tile as soon as your cursor rests on it, so you only sweep the cursor across the
+  highlights. **Hover delay**, **Click delay** (least time between two clicks) and **First click** (no clicks right after
+  the terminal opens) set its timing.
+- **Auto terms** (marked with a red **!**): solves the terminal with no input, one correct click every **Click delay**
+  after the **First click** delay. Servers may treat this as cheating; use it at your own risk.
+- **Dim others**: in Starts With and Select All the items that aren't an answer are darkened and washed out; **Darken** and **Saturation** set how much.
+- **Melody** only says *click now* while the click can still reach the server before the pane moves on: it times how long
+  the pane stays in each column and measures your ping from earlier terminal clicks.
+- **Look**: tile size, gap, and every colour (background, tile, the three highlight colours, blocked flash, text) with
+  hue / saturation / brightness / opacity sliders or a hex code. The preview on the left is clickable.
+
+Every click is an ordinary click on a slot. It is sent without vanilla's local guess at the result, so panes never
+flicker or end up on your cursor, and a click the server never answers comes back as a hint after a moment.
+
+**Practice:** `/gatestterms` (or the Practice button) runs every terminal in a random order, entirely on your own
+game, with the same GUI, blocking and hover click. `/gatestterms <order|panes|starts_with|colors|rubix|melody>` runs
+just one. Each click is answered after the **Test ping**, and chat shows your time and wrong clicks. Nothing is sent to
+the server.
+
+## Held item animations
+
+**GolemAddons → Visuals → Animations** changes how the item in your hand looks in first person. It uses the same model as the Animations module of [OdinLegacy](https://github.com/odtheking/OdinLegacy) (see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). The preview on the left shows your held item (a diamond sword if your hand is empty) exactly as the game will draw it; **Swing** plays a swing, **Loop** keeps swinging.
+
+**Adjust:**
+- **X / Y / Z** move the item relative to where it normally sits (0 = vanilla, 1 = twice as far right / down / forward).
+- **Pitch / Yaw / Roll** rotate it. The swing happens after the rotation, so a tilted item swings along its tilt.
+- **Size** scales it. **Speed** makes the swing faster or slower; it changes only your own swing animation, not attacks or the attack cooldown.
+- **Swing: Full / Pivot**: Full is the normal swing. Pivot keeps the swing's rotation but not its forward movement (Odin's "No Swing").
+- Drag a slider or use the arrow keys (Shift for bigger steps); double-click or right-click it to reset that value. **Reset all** sets everything back.
+
+**Options:** **Scale swing** (the swing's movement follows the item's size), **Ignore haste** (Haste and Mining Fatigue don't change the swing speed), **No equip animation** (switching items doesn't lower and raise your hand).
+
+**Presets:** type a name and press **Save new**. Click a preset to load it; **Overwrite**, **Rename** and **Delete** (click twice) act on the selected one. Up to 50 presets. **Copy to clipboard** turns the current values into a short text (`GA-ANIM1:…`) you can send to someone; **Paste from clipboard** loads one. Pasted text is checked and rejected if it isn't a valid preset.
+
+Press **Save** to apply. With every value at its default the item looks exactly like vanilla. The animations only change rendering on your screen.
+
+## Updates
+
+Click the refresh button next to the version in the bottom-right of the menu to check now, and again to install a new version; right-click it for the settings below. GolemAddons also checks [this repository's GitHub releases](https://github.com/TornadoTheQT/GolemAddons/releases) when the game starts (turn off **Check on start** to stop that) and shows a toast when a newer version is out.
+
+- **Install** downloads the new jar, checks it, and puts it in your mods folder. It's used from the **next start**. The running game is never changed.
+- **Auto-update** (off by default) does the same by itself after each check.
+- **Skip version** stops reminders and auto-update for that version. **Pre-releases** also offers test versions.
+
+How an install is checked:
+- It only downloads from `github.com/TornadoTheQT/GolemAddons` releases over HTTPS (redirects only to GitHub's own file servers). This is built into the mod and can't be changed by config, servers or chat.
+- The file must match the size and **SHA-256 checksum** GitHub publishes for it, and the jar's own metadata must say it's GolemAddons at that version. If GitHub publishes no checksum, nothing is installed and you get the release page instead.
+- The new jar waits as `golemaddons-<version>.jar.part` (which the game ignores) until the game closes. Then the old GolemAddons jar is removed and the new one takes its name, so there are never two copies. On Windows, where the running jar is locked, a small helper process finishes the swap right after the game exits.
+- It only ever deletes the jar the running mod was loaded from, and only after checking that it really is GolemAddons. Installing is disabled if the mod isn't a jar directly in the game's `mods` folder (e.g. a development build).
 
 ## Dragon Party Finder
 
@@ -196,8 +275,7 @@ Open it with `/gapf` or **GolemAddons → Party Finder**. It shows the parties l
 
 **Browsing:**
 - **All / GDrag / NDrag** tabs, a search box (party name, description, leader or member), **Open only**, and a sort order (newest, oldest, most or fewest players, most space).
-- **Needs:** role chips show only parties with a free slot for that role. **Join as** is the role you ask for (Any takes any unreserved place).
-- Each row shows the leader's head, the name and type, Open / Full / In progress, the size, and the open role slots. Click a row to show its members.
+- Each row shows the leader's head, the name and type, Open / Full / In progress, the size, and how many places are free. Click a row to show its members.
 - The list scrolls smoothly and is paged (20 per page). It refreshes whenever you open the screen and when you press **Refresh**.
 
 **Joining:** press **Join**. The leader gets a pop-up and a chat line with **[Accept] [Deny]** buttons, and their game makes a sound. Once they accept, their game runs `/p <your name>` for them and you get a pop-up telling you to accept the invite. Unanswered requests expire after a minute.

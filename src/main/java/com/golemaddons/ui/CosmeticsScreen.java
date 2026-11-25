@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,10 +27,10 @@ final class CosmeticsScreen extends EditorScreen {
 
 	private EditBox nameBox;
 	private EditBox capeBox;
-	private Button nameApply;
-	private Button nameReset;
-	private Button capeApply;
-	private Button capeReset;
+	private GolemButton nameApply;
+	private GolemButton nameReset;
+	private GolemButton capeApply;
+	private GolemButton capeReset;
 	private CosmeticName.Result typedName = CosmeticName.parse("");
 	private CapeUrlRules.Result typedCape = CapeUrlRules.check("", null);
 	private boolean urlValid = true;
@@ -80,7 +78,7 @@ final class CosmeticsScreen extends EditorScreen {
 		// Name
 		panels.add(new Panel(px, y, columnW, fieldH, Component.translatable("golemaddons.cosmetics.panel.name")));
 		int rowY = y + PANEL_LABEL + 2;
-		nameBox = new EditBox(font, ix, rowY, boxW, ROW, Component.translatable("golemaddons.cosmetics.panel.name"));
+		nameBox = new GolemEditBox(font, ix, rowY, boxW, ROW, Component.translatable("golemaddons.cosmetics.panel.name"));
 		nameBox.setMaxLength(CosmeticName.MAX_RAW);
 		nameBox.setHint(Component.translatable("golemaddons.cosmetics.name.hint"));
 		nameBox.setTooltip(Tooltip.create(Component.translatable("golemaddons.cosmetics.name.help")));
@@ -89,8 +87,8 @@ final class CosmeticsScreen extends EditorScreen {
 		nameBox.setResponder(v -> typedName = CosmeticName.parse(v));
 		typedName = CosmeticName.parse(nameBox.getValue());
 		addRenderableWidget(nameBox);
-		nameApply = addRenderableWidget(Button.builder(apply, b -> applyName()).bounds(ix + boxW + GAP, rowY, applyW, ROW).build());
-		nameReset = addRenderableWidget(Button.builder(reset, b -> send("name", null))
+		nameApply = addRenderableWidget(GolemButton.builder(apply, b -> applyName()).bounds(ix + boxW + GAP, rowY, applyW, ROW).build());
+		nameReset = addRenderableWidget(GolemButton.builder(reset, b -> send("name", null))
 				.tooltip(Tooltip.create(Component.translatable("golemaddons.cosmetics.name.reset_tooltip")))
 				.bounds(ix + inner - resetW, rowY, resetW, ROW).build());
 		y += fieldH + SMALL_GAP;
@@ -98,14 +96,14 @@ final class CosmeticsScreen extends EditorScreen {
 		// Cape
 		panels.add(new Panel(px, y, columnW, fieldH, Component.translatable("golemaddons.cosmetics.panel.cape")));
 		rowY = y + PANEL_LABEL + 2;
-		capeBox = new EditBox(font, ix, rowY, boxW, ROW, Component.translatable("golemaddons.cosmetics.panel.cape"));
+		capeBox = new GolemEditBox(font, ix, rowY, boxW, ROW, Component.translatable("golemaddons.cosmetics.panel.cape"));
 		capeBox.setMaxLength(CapeUrlRules.MAX_LENGTH);
 		capeBox.setHint(Component.translatable("golemaddons.cosmetics.cape.hint"));
 		capeBox.setTooltip(Tooltip.create(Component.translatable("golemaddons.cosmetics.cape.help")));
 		capeBox.setResponder(v -> typedCape = CapeUrlRules.check(v, null));
 		addRenderableWidget(capeBox);
-		capeApply = addRenderableWidget(Button.builder(apply, b -> applyCape()).bounds(ix + boxW + GAP, rowY, applyW, ROW).build());
-		capeReset = addRenderableWidget(Button.builder(reset, b -> send("capeUrl", null))
+		capeApply = addRenderableWidget(GolemButton.builder(apply, b -> applyCape()).bounds(ix + boxW + GAP, rowY, applyW, ROW).build());
+		capeReset = addRenderableWidget(GolemButton.builder(reset, b -> send("capeUrl", null))
 				.tooltip(Tooltip.create(Component.translatable("golemaddons.cosmetics.cape.reset_tooltip")))
 				.bounds(ix + inner - resetW, rowY, resetW, ROW).build());
 		y += fieldH + SMALL_GAP;
@@ -114,16 +112,16 @@ final class CosmeticsScreen extends EditorScreen {
 		panels.add(new Panel(px, y, columnW, settingsH, Component.translatable("golemaddons.cosmetics.panel.settings")));
 		int third = (inner - 2 * GAP) / 3;
 		rowY = y + PANEL_LABEL + 2;
-		addRenderableWidget(CycleButton.onOffBuilder(settings.enabled)
+		addRenderableWidget(GolemCycle.onOffBuilder(settings.enabled)
 				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.cosmetics.enabled.tooltip")))
 				.create(ix, rowY, third, ROW, Component.translatable("golemaddons.cosmetics.enabled"), (b, v) -> settings.enabled = v));
-		addRenderableWidget(CycleButton.onOffBuilder(settings.showOthers)
+		addRenderableWidget(GolemCycle.onOffBuilder(settings.showOthers)
 				.create(ix + third + GAP, rowY, third, ROW, Component.translatable("golemaddons.cosmetics.show_others"), (b, v) -> settings.showOthers = v));
-		addRenderableWidget(CycleButton.onOffBuilder(settings.showOwn)
+		addRenderableWidget(GolemCycle.onOffBuilder(settings.showOwn)
 				.create(ix + 2 * (third + GAP), rowY, inner - 2 * (third + GAP), ROW, Component.translatable("golemaddons.cosmetics.show_own"),
 						(b, v) -> settings.showOwn = v));
 		rowY += ROW + 4;
-		EditBox urlBox = new EditBox(font, ix, rowY, inner, ROW, Component.translatable("golemaddons.cosmetics.panel.server"));
+		EditBox urlBox = new GolemEditBox(font, ix, rowY, inner, ROW, Component.translatable("golemaddons.cosmetics.panel.server"));
 		urlBox.setMaxLength(256);
 		urlBox.setValue(settings.apiBaseUrl);
 		urlBox.setHint(Component.translatable("golemaddons.cosmetics.server.hint"));

@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -38,7 +36,7 @@ final class RuleEditScreen extends Screen {
 	private RuleValidator.ItemIdResult idResult;
 	private ItemMatcher previewMatcher = ItemMatcher.EMPTY;
 	private final List<PreviewEntry> preview = new ArrayList<>();
-	private Button saveButton;
+	private GolemButton saveButton;
 	private int ticks;
 
 	RuleEditScreen(Screen parent, SellRule draft, boolean protectHotbar, Consumer<SellRule> onSave) {
@@ -57,13 +55,13 @@ final class RuleEditScreen extends Screen {
 	protected void init() {
 		int x = left();
 
-		EditBox label = new EditBox(font, x, 36, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.label"));
+		EditBox label = new GolemEditBox(font, x, 36, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.label"));
 		label.setMaxLength(64);
 		label.setValue(draft.label);
 		label.setResponder(value -> draft.label = value);
 		addRenderableWidget(label);
 
-		EditBox pattern = new EditBox(font, x, 76, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.pattern"));
+		EditBox pattern = new GolemEditBox(font, x, 76, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.pattern"));
 		pattern.setMaxLength(RuleValidator.MAX_PATTERN_LENGTH);
 		pattern.setValue(draft.namePattern);
 		pattern.setHint(Component.translatable("golemaddons.rule.pattern.hint"));
@@ -73,7 +71,7 @@ final class RuleEditScreen extends Screen {
 		});
 		addRenderableWidget(pattern);
 
-		EditBox itemId = new EditBox(font, x, 126, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.item_id"));
+		EditBox itemId = new GolemEditBox(font, x, 126, CONTENT_WIDTH, 20, Component.translatable("golemaddons.rule.item_id"));
 		itemId.setMaxLength(100);
 		itemId.setValue(draft.itemId);
 		itemId.setHint(Component.translatable("golemaddons.rule.item_id.hint"));
@@ -83,18 +81,18 @@ final class RuleEditScreen extends Screen {
 		});
 		addRenderableWidget(itemId);
 
-		addRenderableWidget(CycleButton.onOffBuilder(draft.caseInsensitive)
+		addRenderableWidget(GolemCycle.onOffBuilder(draft.caseInsensitive)
 				.create(x, 162, CONTENT_WIDTH / 2 - 2, 20, Component.translatable("golemaddons.rule.case_insensitive"), (b, value) -> {
 					draft.caseInsensitive = value;
 					revalidate();
 				}));
-		addRenderableWidget(CycleButton.onOffBuilder(draft.enabled)
+		addRenderableWidget(GolemCycle.onOffBuilder(draft.enabled)
 				.create(x + CONTENT_WIDTH / 2 + 2, 162, CONTENT_WIDTH / 2 - 2, 20, Component.translatable("golemaddons.rule.enabled"),
 						(b, value) -> draft.enabled = value));
 
-		saveButton = addRenderableWidget(Button.builder(Component.translatable("golemaddons.config.save"), b -> save())
+		saveButton = addRenderableWidget(GolemButton.builder(Component.translatable("golemaddons.config.save"), b -> save())
 				.bounds(x, height - 28, CONTENT_WIDTH / 2 - 2, 20).build());
-		addRenderableWidget(Button.builder(Component.translatable("golemaddons.config.cancel"), b -> onClose())
+		addRenderableWidget(GolemButton.builder(Component.translatable("golemaddons.config.cancel"), b -> onClose())
 				.bounds(x + CONTENT_WIDTH / 2 + 2, height - 28, CONTENT_WIDTH / 2 - 2, 20).build());
 
 		setInitialFocus(pattern);

@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -18,7 +16,6 @@ import net.minecraft.world.entity.player.Inventory;
 /**
  * Pick which dragons, pieces and extra drops the Dragon Seller sells, as checklists: colored name on the left,
  * checkbox on the right. Each section uses as many columns as fit, filled top to bottom, inside centered panels.
- * Also holds the dragon hitbox toggle.
  */
 final class DragonSellerScreen extends EditorScreen {
 	private static final int ROW = 16;
@@ -120,17 +117,12 @@ final class DragonSellerScreen extends EditorScreen {
 		int px = (width - panelW) / 2;
 		int y = centeredTop(blockHeight(grids, rowHeight));
 
-		// Top row: the seller's master switch and the hitbox switch, side by side.
-		int half = (panelW - GAP * 2) / 2;
-		addRenderableWidget(CycleButton.onOffBuilder(s.enabled)
-				.create(px, y, half, TOP_ROW, Component.translatable("golemaddons.dragon.enabled"), (b, value) -> {
+		// Top row: the seller's master switch. (The dragon hitbox switch lives in Visuals.)
+		addRenderableWidget(GolemCycle.onOffBuilder(s.enabled)
+				.create(px, y, panelW, TOP_ROW, Component.translatable("golemaddons.dragon.enabled"), (b, value) -> {
 					s.enabled = value;
 					rebuildWidgets();
 				}));
-		addRenderableWidget(CycleButton.onOffBuilder(working.render.dragonHitboxes)
-				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.hitboxes.tooltip")))
-				.create(px + panelW - half, y, half, TOP_ROW, Component.translatable("golemaddons.hitboxes.label"),
-						(b, value) -> working.render.dragonHitboxes = value));
 		y += TOP_ROW + 4;
 		hintY = y;
 		y += 12;
@@ -157,7 +149,7 @@ final class DragonSellerScreen extends EditorScreen {
 		}
 
 		addFooter(
-				Button.builder(Component.translatable("golemaddons.dragon.reset"), b -> {
+				GolemButton.builder(Component.translatable("golemaddons.dragon.reset"), b -> {
 					s.resetToDefaults();
 					rebuildWidgets();
 				}).tooltip(Tooltip.create(Component.translatable("golemaddons.dragon.reset.tooltip"))),

@@ -1,17 +1,23 @@
 package com.golemaddons;
 
+import com.golemaddons.animation.AnimationFeature;
+import com.golemaddons.animation.HeldItemPreviewRenderer;
 import com.golemaddons.autoclick.AutoClickerFeature;
 import com.golemaddons.autosell.AutoSellFeature;
+import com.golemaddons.camera.CameraFeature;
 import com.golemaddons.config.ConfigManager;
 import com.golemaddons.config.GolemConfig;
 import com.golemaddons.cosmetics.CosmeticsFeature;
 import com.golemaddons.partyfinder.PartyFinderFeature;
 import com.golemaddons.render.DragonHitboxRenderer;
+import com.golemaddons.terminals.TerminalFeature;
 import com.golemaddons.ui.GolemHubScreen;
+import com.golemaddons.update.UpdateChecker;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
@@ -63,6 +69,11 @@ public final class GolemAddonsClient implements ClientModInitializer {
 		new PartyFinderFeature().register(config);
 		autoClicker = new AutoClickerFeature(category);
 		autoClicker.register(config);
+		CameraFeature.register(config);
+		AnimationFeature.register(config);
+		TerminalFeature.register(config);
+		PictureInPictureRendererRegistry.register(ctx -> new HeldItemPreviewRenderer(ctx.bufferSource()));
+		UpdateChecker.instance().register(config);
 
 		config.load();
 

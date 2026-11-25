@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,7 +24,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 /**
- * Create, edit and run your party: type, name, description, size, role slots and auto-accept on the left; members
+ * Create, edit and run your party: type, name, description, size and auto-accept on the left; members
  * and join requests (accept, deny, kick) on the right. Members of someone else's party see that party with a Leave
  * button. Settings you type are kept as the draft for next time, and notification options are saved too.
  */
@@ -50,8 +48,8 @@ final class MyPartyScreen extends EditorScreen {
 	private String modeKey = "";
 	private String seenContent = "";
 	private long disbandArmedUntil;
-	private Button primary;
-	private Button disbandButton;
+	private GolemButton primary;
+	private GolemButton disbandButton;
 	private int statusX;
 	private int statusY;
 	private int statusW;
@@ -94,7 +92,6 @@ final class MyPartyScreen extends EditorScreen {
 			name = own.name();
 			desc = own.desc();
 			max = own.max();
-			roles.putAll(own.roles());
 			autoAccept = own.autoAccept();
 		} else {
 			GolemConfig.PartyFinder.Draft d = prefs.draft;
@@ -102,7 +99,6 @@ final class MyPartyScreen extends EditorScreen {
 			name = d.name.isEmpty() ? Component.translatable("golemaddons.pf.default_name", minecraft.getUser().getName()).getString() : d.name;
 			desc = d.desc;
 			max = Math.clamp(d.max, 1, 6);
-			for (Role r : Role.values()) roles.put(r, Math.clamp(d.roles.getOrDefault(r.id(), 0), 0, 5));
 			autoAccept = d.autoAccept;
 		}
 	}
@@ -152,13 +148,9 @@ final class MyPartyScreen extends EditorScreen {
 		int ix = left + PANEL_PAD + 2;
 		int inner = leftW - 2 * PANEL_PAD - 2;
 
-		// Roles go on one row when there's room for "Support: 5", else 3 + 2.
-		int roleW1 = (inner - 4 * GAP) / 5;
-		boolean oneRoleRow = roleW1 >= font.width("Support: 5") + 10;
 		int partyH = PANEL_LABEL + 3 * (ROW + 2) + PANEL_PAD;
-		int rolesH = PANEL_LABEL + (oneRoleRow ? ROW : 2 * ROW + 2) + PANEL_PAD;
 		int optionsH = PANEL_LABEL + 2 * (ROW + 2) + PANEL_PAD;
-		int leftH = partyH + 4 + rolesH;
+		int leftH = partyH;
 		int available = height - HEADER_HEIGHT - FOOTER_HEIGHT - 12;
 		int columnH = twoColumns ? Math.max(leftH + 14, Math.min(available - 6, 260)) : leftH;
 		int top = HEADER_HEIGHT + 6 + Math.max(0, (available - columnH) / 2);
@@ -168,24 +160,24 @@ final class MyPartyScreen extends EditorScreen {
 		panels.add(new Panel(left, y, leftW, partyH, Component.translatable(own != null ? "golemaddons.pf.panel.edit" : "golemaddons.pf.panel.new")));
 		int ry = y + PANEL_LABEL + 2;
 		int smallW = Math.max(44, inner / 4);
-		addRenderableWidget(CycleButton.builder((DragonType t) -> Component.literal(t.label).withColor(t.color & 0xFFFFFF), type)
+		addRenderableWidget(GolemCycle.builder((DragonType t) -> Component.literal(t.label).withColor(t.color & 0xFFFFFF), type)
 				.withValues(DragonType.values())
 				.displayOnlyValue()
 				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.field.type")))
 				.create(ix, ry, smallW, ROW, Component.translatable("golemaddons.pf.field.type"), (b, v) -> type = v));
-		addRenderableWidget(CycleButton.builder((Integer n) -> Component.translatable("golemaddons.pf.field.max.value", n), max)
+		addRenderableWidget(GolemCycle.builder((Integer n) -> Component.translatable("golemaddons.pf.field.max.value", n), max)
 				.withValues(List.of(1, 2, 3, 4, 5, 6))
 				.displayOnlyValue()
 				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.field.max.tooltip")))
 				.create(ix + smallW + GAP, ry, smallW, ROW, Component.translatable("golemaddons.pf.field.max"), (b, v) -> max = v));
 		int autoX = ix + 2 * (smallW + GAP);
-		addRenderableWidget(CycleButton.booleanBuilder(Component.translatable("golemaddons.pf.field.auto_accept.on").withColor(UiText.GREEN & 0xFFFFFF),
+		addRenderableWidget(GolemCycle.booleanBuilder(Component.translatable("golemaddons.pf.field.auto_accept.on").withColor(UiText.GREEN & 0xFFFFFF),
 						Component.translatable("golemaddons.pf.field.auto_accept.off").withColor(UiText.GRAY & 0xFFFFFF), autoAccept)
 				.displayOnlyValue()
 				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.field.auto_accept.tooltip")))
 				.create(autoX, ry, ix + inner - autoX, ROW, Component.translatable("golemaddons.pf.field.auto_accept"), (b, v) -> autoAccept = v));
 		ry += ROW + 2;
-		EditBox nameBox = new EditBox(font, ix, ry, inner, ROW, Component.translatable("golemaddons.pf.field.name"));
+		EditBox nameBox = new GolemEditBox(font, ix, ry, inner, ROW, Component.translatable("golemaddons.pf.field.name"));
 		nameBox.setMaxLength(PartyText.NAME_MAX);
 		nameBox.setHint(Component.translatable("golemaddons.pf.field.name"));
 		nameBox.setTooltip(Tooltip.create(Component.translatable("golemaddons.pf.field.name")));
@@ -193,35 +185,14 @@ final class MyPartyScreen extends EditorScreen {
 		nameBox.setResponder(v -> name = v);
 		addRenderableWidget(nameBox);
 		ry += ROW + 2;
-		EditBox descBox = new EditBox(font, ix, ry, inner, ROW, Component.translatable("golemaddons.pf.field.desc"));
+		EditBox descBox = new GolemEditBox(font, ix, ry, inner, ROW, Component.translatable("golemaddons.pf.field.desc"));
 		descBox.setMaxLength(PartyText.DESC_MAX);
 		descBox.setHint(Component.translatable("golemaddons.pf.field.desc.hint"));
 		descBox.setTooltip(Tooltip.create(Component.translatable("golemaddons.pf.field.desc")));
 		descBox.setValue(desc);
 		descBox.setResponder(v -> desc = v);
 		addRenderableWidget(descBox);
-		y += partyH + 4;
-
-		// Role slots wanted from others.
-		panels.add(new Panel(left, y, leftW, rolesH, Component.translatable("golemaddons.pf.panel.roles")));
-		ry = y + PANEL_LABEL + 2;
-		List<Integer> counts = List.of(0, 1, 2, 3, 4, 5);
-		Role[] all = Role.values();
-		for (int i = 0; i < all.length; i++) {
-			Role r = all[i];
-			int perRow = oneRoleRow ? 5 : i < 3 ? 3 : 2;
-			int col = oneRoleRow ? i : i < 3 ? i : i - 3;
-			int w = (inner - (perRow - 1) * GAP) / perRow;
-			int bx = ix + col * (w + GAP);
-			int by = ry + (oneRoleRow || i < 3 ? 0 : ROW + 2);
-			addRenderableWidget(CycleButton.builder((Integer n) -> Component.translatable(r.translationKey())
-							.append(": " + n).withColor(n > 0 ? r.color & 0xFFFFFF : UiText.GRAY & 0xFFFFFF), roles.get(r))
-					.withValues(counts)
-					.displayOnlyValue()
-					.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.field.role.tooltip", PartyUi.role(r))))
-					.create(bx, by, w, ROW, Component.translatable(r.translationKey()), (b, v) -> roles.put(r, v)));
-		}
-		y += rolesH;
+		y += partyH;
 		statusX = left;
 		statusY = y + 4;
 		statusW = leftW - 4;
@@ -246,11 +217,11 @@ final class MyPartyScreen extends EditorScreen {
 				int shown = 0;
 				for (JoinRequest r : requests) {
 					if (ly > maxLy - LINE || shown == MAX_REQUESTS_SHOWN) break;
-					lines.add(new Line(ly, r.uuid(), Component.literal(r.name()).append(" ").append(PartyUi.role(r.role()))));
-					addRenderableWidget(Button.builder(Component.literal("✔"), b -> feature.respond(r.id(), true))
+					lines.add(new Line(ly, r.uuid(), Component.literal(r.name())));
+					addRenderableWidget(GolemButton.builder(Component.literal("✔"), b -> feature.respond(r.id(), true))
 							.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.accept.tooltip", r.name())))
 							.bounds(rix + rInner - 31, ly - 2, 15, 12).build());
-					addRenderableWidget(Button.builder(Component.literal("✖"), b -> feature.respond(r.id(), false))
+					addRenderableWidget(GolemButton.builder(Component.literal("✖"), b -> feature.respond(r.id(), false))
 							.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.deny.tooltip", r.name())))
 							.bounds(rix + rInner - 15, ly - 2, 15, 12).build());
 					ly += LINE;
@@ -270,8 +241,8 @@ final class MyPartyScreen extends EditorScreen {
 					hidden++;
 					continue;
 				}
-				lines.add(new Line(ly, m.uuid(), Component.literal(m.name()).append(" ").append(PartyUi.role(m.role()))));
-				addRenderableWidget(Button.builder(Component.translatable("golemaddons.pf.kick"), b -> feature.kick(m.uuid()))
+				lines.add(new Line(ly, m.uuid(), Component.literal(m.name())));
+				addRenderableWidget(GolemButton.builder(Component.translatable("golemaddons.pf.kick"), b -> feature.kick(m.uuid()))
 						.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.kick.tooltip", m.name())))
 						.bounds(rix + rInner - 30, ly - 2, 30, 12).build());
 				ly += LINE;
@@ -291,10 +262,10 @@ final class MyPartyScreen extends EditorScreen {
 			ly += LINE;
 			for (Member m : member.members()) {
 				if (ly > maxLy - ROW) break;
-				lines.add(new Line(ly, m.uuid(), Component.literal(m.name()).append(" ").append(PartyUi.role(m.role()))));
+				lines.add(new Line(ly, m.uuid(), Component.literal(m.name())));
 				ly += LINE;
 			}
-			addRenderableWidget(Button.builder(Component.translatable("golemaddons.pf.leave"), b -> feature.leave())
+			addRenderableWidget(GolemButton.builder(Component.translatable("golemaddons.pf.leave"), b -> feature.leave())
 					.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.leave.tooltip")))
 					.bounds(rix, listBottom - ROW - PANEL_PAD + 2, rInner, ROW).build());
 		} else {
@@ -304,7 +275,7 @@ final class MyPartyScreen extends EditorScreen {
 				Party p = feature.party(out.party());
 				lines.add(new Line(ly, p == null ? null : p.leaderId(), Component.translatable("golemaddons.pf.waiting",
 						p == null ? "?" : p.leaderName())));
-				addRenderableWidget(Button.builder(Component.translatable("golemaddons.pf.cancel"), b -> feature.cancelRequest())
+				addRenderableWidget(GolemButton.builder(Component.translatable("golemaddons.pf.cancel"), b -> feature.cancelRequest())
 						.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.cancel.tooltip")))
 						.bounds(rix, listBottom - ROW - PANEL_PAD + 2, rInner, ROW).build());
 			} else {
@@ -323,7 +294,7 @@ final class MyPartyScreen extends EditorScreen {
 		addRenderableWidget(toggle(rix + 2 * (optW + GAP), ry, rInner - 2 * (optW + GAP), "golemaddons.pf.opt.sound", prefs.sound,
 				v -> prefs.sound = v, null));
 		ry += ROW + 2;
-		EditBox command = new EditBox(font, rix, ry, rInner, ROW, Component.translatable("golemaddons.pf.opt.command"));
+		EditBox command = new GolemEditBox(font, rix, ry, rInner, ROW, Component.translatable("golemaddons.pf.opt.command"));
 		command.setMaxLength(48);
 		command.setValue(prefs.inviteCommand);
 		command.setTooltip(Tooltip.create(Component.translatable("golemaddons.pf.opt.command.tooltip")));
@@ -335,30 +306,30 @@ final class MyPartyScreen extends EditorScreen {
 
 		// Footer
 		if (own != null) {
-			primary = Button.builder(Component.translatable("golemaddons.pf.save"), b -> submit(true)).build();
-			disbandButton = Button.builder(Component.translatable("golemaddons.pf.disband"), b -> disband())
+			primary = GolemButton.builder(Component.translatable("golemaddons.pf.save"), b -> submit(true)).build();
+			disbandButton = GolemButton.builder(Component.translatable("golemaddons.pf.disband"), b -> disband())
 					.tooltip(Tooltip.create(Component.translatable("golemaddons.pf.disband.tooltip"))).build();
-			CycleButton<Boolean> progress = CycleButton.booleanBuilder(
+			GolemCycle<Boolean> progress = GolemCycle.booleanBuilder(
 							Component.translatable("golemaddons.pf.status.in_progress").withColor(UiText.GOLD & 0xFFFFFF),
 							Component.translatable("golemaddons.pf.status.open").withColor(UiText.GREEN & 0xFFFFFF),
 							own.status() == PartyModels.Status.IN_PROGRESS)
 					.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.in_progress.tooltip")))
 					.create(0, 0, 90, 20, Component.translatable("golemaddons.pf.field.status"), (b, v) -> feature.setInProgress(v));
-			addFooter(primary, progress, disbandButton, Button.builder(Component.translatable("golemaddons.pf.back"), b -> onClose()).build());
+			addFooter(primary, progress, disbandButton, GolemButton.builder(Component.translatable("golemaddons.pf.back"), b -> onClose()).build());
 		} else {
-			primary = Button.builder(Component.translatable("golemaddons.pf.create"), b -> submit(false))
+			primary = GolemButton.builder(Component.translatable("golemaddons.pf.create"), b -> submit(false))
 					.tooltip(Tooltip.create(Component.translatable(member != null ? "golemaddons.pf.create.leaves" : "golemaddons.pf.create.tooltip")))
 					.build();
 			disbandButton = null;
-			addFooter(primary, Button.builder(Component.translatable("golemaddons.pf.back"), b -> onClose()).build());
+			addFooter(primary, GolemButton.builder(Component.translatable("golemaddons.pf.back"), b -> onClose()).build());
 		}
 		updateButtons();
 	}
 
-	private static CycleButton<Boolean> toggle(int x, int y, int w, String key, boolean value, java.util.function.Consumer<Boolean> set,
+	private static GolemCycle<Boolean> toggle(int x, int y, int w, String key, boolean value, java.util.function.Consumer<Boolean> set,
 			String tooltip) {
 		Component label = Component.translatable(key);
-		CycleButton.Builder<Boolean> b = CycleButton.booleanBuilder(label.copy().withColor(UiText.GREEN & 0xFFFFFF),
+		GolemCycle.Builder<Boolean> b = GolemCycle.booleanBuilder(label.copy().withColor(UiText.GREEN & 0xFFFFFF),
 				label.copy().withColor(UiText.DARK_GRAY & 0xFFFFFF).withStyle(net.minecraft.ChatFormatting.STRIKETHROUGH), value)
 				.displayOnlyValue();
 		if (tooltip != null) b = b.withTooltip(v -> Tooltip.create(Component.translatable(tooltip)));
@@ -378,9 +349,6 @@ final class MyPartyScreen extends EditorScreen {
 		PartyText.Result d = PartyText.check(desc, PartyText.DESC_MAX, true);
 		if (!d.valid()) return Component.translatable("golemaddons.pf.text." + d.problem().name().toLowerCase(Locale.ROOT),
 				Component.translatable("golemaddons.pf.field.desc"));
-		int total = 0;
-		for (int v : roles.values()) total += v;
-		if (total > max - 1) return Component.translatable("golemaddons.pf.why.too_many_roles", total, max - 1);
 		Party own = feature == null ? null : feature.leading();
 		if (own != null && max < own.size()) return Component.translatable("golemaddons.pf.why.too_small", own.size());
 		return null;
@@ -419,7 +387,6 @@ final class MyPartyScreen extends EditorScreen {
 			p.draft.desc = desc;
 			p.draft.max = max;
 			p.draft.roles.clear();
-			for (Role r : Role.values()) if (roles.get(r) > 0) p.draft.roles.put(r.id(), roles.get(r));
 			p.draft.autoAccept = autoAccept;
 		}
 		GolemAddonsClient.config().save(next);

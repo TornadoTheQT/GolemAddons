@@ -5,7 +5,6 @@ import com.golemaddons.config.GolemConfig;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -31,6 +30,8 @@ abstract class EditorScreen extends Screen {
 	protected final GolemConfig working;
 	protected final List<Panel> panels = new ArrayList<>();
 	private boolean saveFailed;
+	/** Panels fade and slide in once when the screen opens (not again on rebuilds). */
+	private final long openedAt = net.minecraft.util.Util.getMillis();
 
 	protected EditorScreen(Component title, Screen parent) {
 		super(title);
@@ -64,7 +65,7 @@ abstract class EditorScreen extends Screen {
 	}
 
 	/** One row of buttons along the bottom, each sized to its label and the row centered. */
-	protected void addFooter(Button.Builder... builders) {
+	protected void addFooter(GolemButton.Builder... builders) {
 		var buttons = new net.minecraft.client.gui.components.AbstractWidget[builders.length];
 		for (int i = 0; i < builders.length; i++) buttons[i] = builders[i].build();
 		addFooter(buttons);
@@ -86,12 +87,12 @@ abstract class EditorScreen extends Screen {
 		}
 	}
 
-	protected Button.Builder saveButton() {
-		return Button.builder(Component.translatable("golemaddons.config.save"), b -> save());
+	protected GolemButton.Builder saveButton() {
+		return GolemButton.builder(Component.translatable("golemaddons.config.save"), b -> save());
 	}
 
-	protected Button.Builder cancelButton() {
-		return Button.builder(Component.translatable("golemaddons.config.cancel"), b -> onClose());
+	protected GolemButton.Builder cancelButton() {
+		return GolemButton.builder(Component.translatable("golemaddons.config.cancel"), b -> onClose());
 	}
 
 	protected void save() {
@@ -110,16 +111,22 @@ abstract class EditorScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		super.extractBackground(graphics, mouseX, mouseY, delta);
-		graphics.fill(0, 0, width, HEADER_HEIGHT, 0xB0000000);
+		graphics.fillGradient(0, 0, width, HEADER_HEIGHT, 0xD0120E22, 0xB0000000);
 		graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, UiText.withAlpha(UiText.ACCENT, 0.8f));
+		graphics.fill(0, HEADER_HEIGHT - 1, width / 3, HEADER_HEIGHT, UiText.withAlpha(UiText.ACCENT_2, 0.6f));
 		graphics.text(font, Component.literal("GolemAddons").withColor(UiText.ACCENT & 0xFFFFFF), 8, 8, UiText.WHITE);
 		graphics.centeredText(font, title, width / 2, 8, UiText.WHITE);
 		graphics.fill(0, height - FOOTER_HEIGHT, width, height, 0x70000000);
-		for (Panel panel : panels) {
-			graphics.fill(panel.x(), panel.y(), panel.x() + panel.w(), panel.y() + panel.h(), 0x90000000);
-			graphics.outline(panel.x(), panel.y(), panel.w(), panel.h(), 0x40FFFFFF);
-			graphics.fill(panel.x(), panel.y(), panel.x() + 2, panel.y() + panel.h(), UiText.withAlpha(UiText.ACCENT, 0.7f));
-			graphics.text(font, panel.label(), panel.x() + PANEL_PAD + 2, panel.y() + 4, UiText.WHITE);
+		for (int i = 0; i < panels.size(); i++) {
+			Panel panel = panels.get(i);
+			float appear = UiAnim.appear(openedAt + 50L * i);
+			int x = panel.x();
+			int y = panel.y() + Math.round((1f - appear) * 6f);
+			graphics.fillGradient(x, y, x + panel.w(), y + panel.h(), UiText.withAlpha(0xB0161226, appear), UiText.withAlpha(0xA0080710, appear));
+			graphics.outline(x, y, panel.w(), panel.h(), UiText.withAlpha(0x38FFFFFF, appear));
+			graphics.fill(x, y, x + 2, y + panel.h(), UiText.withAlpha(UiText.ACCENT, 0.8f * appear));
+			graphics.fill(x + 2, y, x + Math.round(panel.w() * 0.35f * appear), y + 1, UiText.withAlpha(UiText.ACCENT, 0.5f * appear));
+			graphics.text(font, panel.label(), x + PANEL_PAD + 2, y + 4, UiText.withAlpha(UiText.WHITE, appear));
 		}
 	}
 

@@ -9,7 +9,12 @@ import java.util.Map;
 
 /** Everything stored in {@code config/golemaddons.json}. One section per feature, plus shared selling settings. */
 public final class GolemConfig {
-	/** v1 had a single "autoSell" section; v2 splits it into "selling" + "miningAutoSell" and adds "dragonSeller". */
+	/**
+	 * v1 had a single "autoSell" section; v2 splits it into "selling" + "miningAutoSell" and adds "dragonSeller".
+	 * Later sections ("camera", "animations", "updates") are purely additive: a file without them loads with their
+	 * defaults, so they need no migration and no version bump. Not bumping also keeps the file readable by older
+	 * versions of the mod, which set aside any config whose version is newer than they know.
+	 */
 	public static final int CURRENT_VERSION = 2;
 
 	public int configVersion = CURRENT_VERSION;
@@ -20,6 +25,206 @@ public final class GolemConfig {
 	public Cosmetics cosmetics = new Cosmetics();
 	public AutoClicker autoClicker = new AutoClicker();
 	public PartyFinder partyFinder = new PartyFinder();
+	public Camera camera = new Camera();
+	public Animations animations = new Animations();
+	public Updates updates = new Updates();
+	public Terminals terminals = new Terminals();
+
+	/** Floor 7 terminal solvers: the compact GUI, its look, and hover click. */
+	public static final class Terminals {
+		public static final float MIN_SCALE = 0.6f;
+		public static final float MAX_SCALE = 3f;
+		public static final int MAX_GAP = 8;
+		public static final int MAX_DELAY_MS = 1000;
+		public static final int MAX_PING_MS = 500;
+
+		public boolean enabled = true;
+		/** Replace the chest with the compact GUI; off highlights the answer on the normal chest instead. */
+		public boolean customGui = true;
+		/** Refuse clicks that are not part of the answer while a terminal is open. */
+		public boolean blockWrongClicks = true;
+		/** Click a correct slot as soon as the cursor rests on it. */
+		public boolean hoverClick = false;
+		/** Solve terminals without any input, at the hover click's first-click delay and click delay. */
+		public boolean autoTerms = false;
+		/** Darken the items that are not the answer in Starts With and Select All. */
+		public boolean fadeOthers = true;
+		/** How dark the faded items get, 0-95 %. */
+		public int fadePercent = 70;
+		/** Colour left in the faded items, 0 (grey) to 100 % (unchanged). */
+		public int othersSaturation = 100;
+		/** How long the cursor must rest on a slot before hover click fires. */
+		public int hoverDelayMs = 40;
+		/** Least time between two clicks made by hover click. */
+		public int clickDelayMs = 150;
+		/** No hover clicks this soon after a terminal opens. */
+		public int firstClickDelayMs = 350;
+		public float scale = 1.5f;
+		public int gap = 2;
+		/** Delay the practice terminals add before answering a click, like a server would. */
+		public int practicePingMs = 120;
+		public Colors colors = new Colors();
+
+		/** ARGB colours of the compact GUI and the highlights. */
+		public static final class Colors {
+			public int background = 0xE6100E1A;
+			public int tile = 0xFF262236;
+			public int solution = 0xFF5CE1C6;
+			public int second = 0xFFE0B04A;
+			public int third = 0xFF9D7BFF;
+			public int blocked = 0xFFFF5555;
+			public int text = 0xFFFFFFFF;
+
+			Colors copy() {
+				Colors c = new Colors();
+				c.background = background;
+				c.tile = tile;
+				c.solution = solution;
+				c.second = second;
+				c.third = third;
+				c.blocked = blocked;
+				c.text = text;
+				return c;
+			}
+		}
+
+		public Terminals copy() {
+			Terminals c = new Terminals();
+			c.enabled = enabled;
+			c.customGui = customGui;
+			c.blockWrongClicks = blockWrongClicks;
+			c.hoverClick = hoverClick;
+			c.autoTerms = autoTerms;
+			c.fadeOthers = fadeOthers;
+			c.fadePercent = fadePercent;
+			c.othersSaturation = othersSaturation;
+			c.hoverDelayMs = hoverDelayMs;
+			c.clickDelayMs = clickDelayMs;
+			c.firstClickDelayMs = firstClickDelayMs;
+			c.scale = scale;
+			c.gap = gap;
+			c.practicePingMs = practicePingMs;
+			c.colors = colors.copy();
+			return c;
+		}
+
+		void sanitize() {
+			if (colors == null) colors = new Colors();
+			scale = Float.isFinite(scale) ? Math.clamp(scale, MIN_SCALE, MAX_SCALE) : 1.5f;
+			gap = Math.clamp(gap, 0, MAX_GAP);
+			fadePercent = Math.clamp(fadePercent, 0, 95);
+			othersSaturation = Math.clamp(othersSaturation, 0, 100);
+			hoverDelayMs = Math.clamp(hoverDelayMs, 0, MAX_DELAY_MS);
+			clickDelayMs = Math.clamp(clickDelayMs, 0, MAX_DELAY_MS);
+			firstClickDelayMs = Math.clamp(firstClickDelayMs, 0, MAX_DELAY_MS);
+			practicePingMs = Math.clamp(practicePingMs, 0, MAX_PING_MS);
+		}
+	}
+
+	/** Third-person camera tweaks. Render-only: the camera is never sent to the server. */
+	public static final class Camera {
+		public static final float MIN_DISTANCE = 1f;
+		public static final float MAX_DISTANCE = 12f;
+		public static final float VANILLA_DISTANCE = 4f;
+
+		public boolean enabled = true;
+		/** F5 skips the front-facing view. */
+		public boolean disableFrontView = false;
+		/** Use {@link #distance} instead of the game's own third-person distance. */
+		public boolean customDistance = false;
+		public float distance = VANILLA_DISTANCE;
+		/** In third person, the camera passes through blocks instead of being pulled in towards the player. */
+		public boolean clipThroughBlocks = false;
+
+		/** A detached copy the camera mixins can read from the render thread. */
+		public Camera copyForRender() {
+			return copy();
+		}
+
+		Camera copy() {
+			Camera c = new Camera();
+			c.enabled = enabled;
+			c.disableFrontView = disableFrontView;
+			c.customDistance = customDistance;
+			c.distance = distance;
+			c.clipThroughBlocks = clipThroughBlocks;
+			return c;
+		}
+
+		void sanitize() {
+			distance = Float.isFinite(distance) ? Math.clamp(distance, MIN_DISTANCE, MAX_DISTANCE) : VANILLA_DISTANCE;
+		}
+	}
+
+	/** First-person held item position, rotation, scale and swing, plus saved presets. */
+	public static final class Animations {
+		public static final int MAX_PRESETS = 50;
+
+		public boolean enabled = false;
+		public com.golemaddons.animation.HeldItemAnimation current = new com.golemaddons.animation.HeldItemAnimation();
+		public List<Preset> presets = new ArrayList<>();
+
+		public static final class Preset {
+			public String name = "";
+			public com.golemaddons.animation.HeldItemAnimation animation = new com.golemaddons.animation.HeldItemAnimation();
+
+			public Preset() {
+			}
+
+			public Preset(String name, com.golemaddons.animation.HeldItemAnimation animation) {
+				this.name = name;
+				this.animation = animation.copy();
+			}
+		}
+
+		Animations copy() {
+			Animations c = new Animations();
+			c.enabled = enabled;
+			c.current = current.copy();
+			for (Preset p : presets) c.presets.add(new Preset(p.name, p.animation));
+			return c;
+		}
+
+		void sanitize() {
+			if (current == null) current = new com.golemaddons.animation.HeldItemAnimation();
+			current.sanitize();
+			if (presets == null) presets = new ArrayList<>();
+			presets.removeIf(p -> p == null || p.animation == null);
+			java.util.Set<String> seen = new java.util.HashSet<>();
+			List<Preset> clean = new ArrayList<>();
+			for (Preset p : presets) {
+				String name = com.golemaddons.animation.AnimationCodec.cleanName(p.name);
+				if (name.isEmpty() || !seen.add(name.toLowerCase(java.util.Locale.ROOT)) || clean.size() >= MAX_PRESETS) continue;
+				p.name = name;
+				p.animation.sanitize();
+				clean.add(p);
+			}
+			presets = clean;
+		}
+	}
+
+	/** Checking GitHub for new releases of the mod. */
+	public static final class Updates {
+		public boolean checkOnStartup = true;
+		/** Download, verify and stage new releases without asking. Off by default. */
+		public boolean autoUpdate = false;
+		public boolean includePrereleases = false;
+		/** A version the player chose to skip: no reminder and no auto-update for it. Blank for none. */
+		public String skippedVersion = "";
+
+		Updates copy() {
+			Updates c = new Updates();
+			c.checkOnStartup = checkOnStartup;
+			c.autoUpdate = autoUpdate;
+			c.includePrereleases = includePrereleases;
+			c.skippedVersion = skippedVersion;
+			return c;
+		}
+
+		void sanitize() {
+			if (skippedVersion == null || skippedVersion.length() > 64) skippedVersion = "";
+		}
+	}
 
 	/** Dragon Party Finder: browse preferences, the party you last set up, and notifications. */
 	public static final class PartyFinder {
@@ -92,6 +297,10 @@ public final class GolemConfig {
 			if (draft.roles == null) draft.roles = new LinkedHashMap<>();
 			draft.roles.entrySet().removeIf(e -> com.golemaddons.partyfinder.PartyModels.Role.byId(e.getKey()) == null || e.getValue() == null);
 			draft.roles.replaceAll((k, v) -> Math.clamp(v, 0, 5));
+			// Roles were removed from the party finder: drop any saved from older versions so none are ever sent.
+			roleFilter.clear();
+			joinAs = "";
+			draft.roles.clear();
 		}
 	}
 
@@ -177,7 +386,7 @@ public final class GolemConfig {
 		}
 
 		void sanitize() {
-			if (sellScreenTitlePattern == null) sellScreenTitlePattern = "";
+			if (sellScreenTitlePattern == null) sellScreenTitlePattern = "Upgrades Shop";
 			if (quickSellCommand == null) quickSellCommand = "shop";
 			clickDelayTicks = Math.clamp(clickDelayTicks, MIN_DELAY_TICKS, MAX_DELAY_TICKS);
 		}
@@ -299,6 +508,10 @@ public final class GolemConfig {
 		c.cosmetics = cosmetics.copy();
 		c.autoClicker = autoClicker.copy();
 		c.partyFinder = partyFinder.copy();
+		c.camera = camera.copy();
+		c.animations = animations.copy();
+		c.updates = updates.copy();
+		c.terminals = terminals.copy();
 		return c;
 	}
 
@@ -310,6 +523,14 @@ public final class GolemConfig {
 		if (cosmetics == null) cosmetics = new Cosmetics();
 		if (autoClicker == null) autoClicker = new AutoClicker();
 		if (partyFinder == null) partyFinder = new PartyFinder();
+		if (camera == null) camera = new Camera();
+		if (animations == null) animations = new Animations();
+		if (updates == null) updates = new Updates();
+		if (terminals == null) terminals = new Terminals();
+		terminals.sanitize();
+		camera.sanitize();
+		animations.sanitize();
+		updates.sanitize();
 		partyFinder.sanitize();
 		autoClicker.sanitize();
 		cosmetics.sanitize();

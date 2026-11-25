@@ -18,8 +18,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -31,7 +29,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Util;
 
 /**
- * Browse parties on the server you're on: GDrag/NDrag tabs, search, role filters, sorting, open-only, and a
+ * Browse parties on the server you're on: GDrag/NDrag tabs, search, sorting, open-only, and a
  * smoothly scrolling, paged list. Click a row to show its members; the button on the right joins (or manages,
  * leaves, or cancels). Filters are saved when the screen closes.
  */
@@ -65,11 +63,9 @@ public final class PartyFinderScreen extends EditorScreen {
 	private int listY0;
 	private int listX1;
 	private int listY1;
-	private int needsLabelX;
-	private int needsLabelY;
 	private int pageBarY;
-	private Button prevPage;
-	private Button nextPage;
+	private GolemButton prevPage;
+	private GolemButton nextPage;
 
 	public PartyFinderScreen(Screen parent) {
 		super(Component.translatable("golemaddons.pf.title"), parent);
@@ -95,8 +91,6 @@ public final class PartyFinderScreen extends EditorScreen {
 		p.typeFilter = prefs.typeFilter;
 		p.sort = prefs.sort;
 		p.openOnly = prefs.openOnly;
-		p.roleFilter = new ArrayList<>(prefs.roleFilter);
-		p.joinAs = prefs.joinAs;
 		GolemAddonsClient.config().save(next);
 	}
 
@@ -122,7 +116,7 @@ public final class PartyFinderScreen extends EditorScreen {
 			x += w + 2;
 		}
 		int sortW = Math.min(130, Math.max(96, contentW / 5));
-		CycleButton<PartyQuery.Sort> sort = CycleButton.builder(
+		GolemCycle<PartyQuery.Sort> sort = GolemCycle.builder(
 						(PartyQuery.Sort s) -> Component.translatable("golemaddons.pf.sort." + s.id), PartyQuery.Sort.byId(prefs.sort))
 				.withValues(PartyQuery.Sort.values())
 				.create(right - sortW, y, sortW, 18, Component.translatable("golemaddons.pf.sort"), (b, v) -> {
@@ -141,7 +135,7 @@ public final class PartyFinderScreen extends EditorScreen {
 		addRenderableWidget(openOnly);
 		int searchX = x + 4;
 		int searchW = Math.max(40, right - sortW - openW - 8 - searchX);
-		EditBox search = new EditBox(font, searchX, y, searchW, 18, Component.translatable("golemaddons.pf.search"));
+		EditBox search = new GolemEditBox(font, searchX, y, searchW, 18, Component.translatable("golemaddons.pf.search"));
 		search.setMaxLength(32);
 		search.setHint(Component.translatable("golemaddons.pf.search.hint"));
 		search.setTooltip(Tooltip.create(Component.translatable("golemaddons.pf.search.tooltip")));
@@ -151,31 +145,7 @@ public final class PartyFinderScreen extends EditorScreen {
 			invalidate();
 		});
 		addRenderableWidget(search);
-		y += 22;
-
-		// Row 2: "Needs:" role filters, and the role you join as.
-		needsLabelX = left;
-		needsLabelY = y + 5;
-		x = left + font.width(Component.translatable("golemaddons.pf.needs")) + 6;
-		for (Role role : Role.values()) {
-			Component label = Component.translatable(role.translationKey());
-			int w = PartyUi.Chip.widthFor(font, label);
-			addRenderableWidget(new PartyUi.Chip(x, y, w, 16, label, role.color, () -> prefs.roleFilter.contains(role.id()), () -> {
-				if (!prefs.roleFilter.remove(role.id())) prefs.roleFilter.add(role.id());
-				invalidate();
-			}));
-			x += w + 2;
-		}
-		List<String> joinValues = new ArrayList<>();
-		joinValues.add("");
-		for (Role r : Role.values()) joinValues.add(r.id());
-		int joinAsW = Math.min(130, Math.max(96, right - x - 6));
-		CycleButton<String> joinAs = CycleButton.builder((String id) -> PartyUi.role(Role.byId(id)), prefs.joinAs)
-				.withValues(joinValues)
-				.withTooltip(v -> Tooltip.create(Component.translatable("golemaddons.pf.join_as.tooltip")))
-				.create(right - joinAsW, y, joinAsW, 16, Component.translatable("golemaddons.pf.join_as"), (b, v) -> prefs.joinAs = v);
-		addRenderableWidget(joinAs);
-		y += 20;
+		y += 18;
 
 		// The list and its page bar.
 		listX0 = left;
@@ -184,19 +154,19 @@ public final class PartyFinderScreen extends EditorScreen {
 		listY1 = height - FOOTER_HEIGHT - 20;
 		panels.add(new Panel(listX0, listY0, listX1 - listX0, listY1 - listY0, Component.translatable("golemaddons.pf.parties")));
 		pageBarY = listY1 + 3;
-		prevPage = addRenderableWidget(Button.builder(Component.literal("◀"), b -> setPage(page - 1))
+		prevPage = addRenderableWidget(GolemButton.builder(Component.literal("◀"), b -> setPage(page - 1))
 				.bounds(listX0, pageBarY, 20, 14).build());
-		nextPage = addRenderableWidget(Button.builder(Component.literal("▶"), b -> setPage(page + 1))
+		nextPage = addRenderableWidget(GolemButton.builder(Component.literal("▶"), b -> setPage(page + 1))
 				.bounds(listX1 - 20, pageBarY, 20, 14).build());
 
 		boolean inParty = feature != null && (feature.leading() != null || feature.memberOf() != null);
 		addFooter(
-				Button.builder(Component.translatable(inParty ? "golemaddons.pf.my_party" : "golemaddons.pf.create"),
+				GolemButton.builder(Component.translatable(inParty ? "golemaddons.pf.my_party" : "golemaddons.pf.create"),
 						b -> minecraft.setScreen(new MyPartyScreen(this))),
-				Button.builder(Component.translatable("golemaddons.pf.refresh"), b -> {
+				GolemButton.builder(Component.translatable("golemaddons.pf.refresh"), b -> {
 					if (feature != null) feature.screenOpened();
 				}).tooltip(Tooltip.create(Component.translatable("golemaddons.pf.refresh.tooltip"))),
-				Button.builder(Component.translatable("gui.done"), b -> onClose()));
+				GolemButton.builder(Component.translatable("gui.done"), b -> onClose()));
 	}
 
 	private void invalidate() {
@@ -224,13 +194,8 @@ public final class PartyFinderScreen extends EditorScreen {
 	private List<Party> filtered() {
 		if (feature == null) return List.of();
 		if (filterDirty || filteredRevision != feature.revision()) {
-			Set<Role> roles = EnumSet.noneOf(Role.class);
-			for (String id : prefs.roleFilter) {
-				Role r = Role.byId(id);
-				if (r != null) roles.add(r);
-			}
 			filtered = PartyQuery.apply(feature.parties(), new PartyQuery.Filter(DragonType.byId(prefs.typeFilter), searchText,
-					roles, prefs.openOnly, PartyQuery.Sort.byId(prefs.sort)));
+					EnumSet.noneOf(Role.class), prefs.openOnly, PartyQuery.Sort.byId(prefs.sort)));
 			filteredRevision = feature.revision();
 			filterDirty = false;
 		}
@@ -242,7 +207,6 @@ public final class PartyFinderScreen extends EditorScreen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
 		super.extractRenderState(g, mouseX, mouseY, delta);
-		g.text(font, Component.translatable("golemaddons.pf.needs"), needsLabelX, needsLabelY, UiText.GRAY, false);
 
 		int ix0 = listX0 + PANEL_PAD;
 		int ix1 = listX1 - PANEL_PAD - 4;
@@ -401,19 +365,11 @@ public final class PartyFinderScreen extends EditorScreen {
 		int jy0 = y + 7;
 		int jy1 = jy0 + 16;
 
-		// Right-hand info: status and size on line 1, open roles on line 2.
+		// Right-hand info: status and size on line 1, free places on line 2.
 		MutableComponent line1Right = PartyUi.status(p).copy().append(Component.literal("  " + p.size() + "/" + p.max()).withColor(UiText.WHITE & 0xFFFFFF));
-		MutableComponent rolesText = Component.empty();
-		for (Role r : Role.values()) {
-			int n = p.open().getOrDefault(r, 0);
-			if (n <= 0) continue;
-			if (!rolesText.getSiblings().isEmpty()) rolesText.append(" ");
-			rolesText.append(Component.translatable(r.translationKey()).withColor(r.color & 0xFFFFFF));
-			if (n > 1) rolesText.append(Component.literal("×" + n).withColor(r.color & 0xFFFFFF));
-		}
-		if (rolesText.getSiblings().isEmpty() && p.status() == Status.OPEN) {
-			rolesText = Component.translatable("golemaddons.pf.any_role").withColor(UiText.GRAY & 0xFFFFFF);
-		}
+		int free = Math.max(0, p.max() - p.size());
+		Component rolesText = p.status() == Status.OPEN && free > 0
+				? Component.translatable("golemaddons.pf.places_free", free).withColor(UiText.GRAY & 0xFFFFFF) : Component.empty();
 		int infoW = Math.max(font.width(line1Right), font.width(rolesText));
 		int infoX = jx0 - 8 - infoW;
 		g.text(font, line1Right, jx0 - 8 - font.width(line1Right), y + 5, UiText.WHITE, false);
@@ -448,7 +404,7 @@ public final class PartyFinderScreen extends EditorScreen {
 			int ey = y + ROW_H - 2;
 			int ex = textX;
 			ex = drawMember(g, p.leaderId(), "★ " + p.leaderName(), null, ex, ey, x1);
-			for (Member m : p.members()) ex = drawMember(g, m.uuid(), m.name(), m.role(), ex, ey, x1);
+			for (Member m : p.members()) ex = drawMember(g, m.uuid(), m.name(), null, ex, ey, x1);
 			for (int i = p.size(); i < p.max() && ex < x1 - 30; i++) {
 				g.outline(ex, ey + 2, 12, 12, 0x40FFFFFF);
 				ex += 18;
@@ -501,7 +457,7 @@ public final class PartyFinderScreen extends EditorScreen {
 					Component.translatable("golemaddons.pf.cancel.tooltip"), feature::cancelRequest);
 		}
 		Component join = Component.translatable("golemaddons.pf.join");
-		Role role = Role.byId(prefs.joinAs);
+		Role role = null; // roles are no longer chosen: any free place
 		Component reason = null;
 		if (feature.connection() != PartyFinderFeature.Connection.ONLINE) reason = Component.translatable("golemaddons.pf.error.offline");
 		else if (feature.leading() != null) reason = Component.translatable("golemaddons.pf.why.leading");
@@ -509,9 +465,9 @@ public final class PartyFinderScreen extends EditorScreen {
 		else if (p.status() == Status.IN_PROGRESS) reason = Component.translatable("golemaddons.pf.why.in_progress");
 		else if (p.status() == Status.FULL) reason = Component.translatable("golemaddons.pf.why.full");
 		else if (!p.leaderOnline()) reason = Component.translatable("golemaddons.pf.why.leader_offline");
-		else if (!p.canTake(role)) reason = Component.translatable("golemaddons.pf.why.role", PartyUi.role(role));
+		else if (!p.canTake(role)) reason = Component.translatable("golemaddons.pf.why.full");
 		if (reason != null) return new JoinState(join, false, UiText.GREEN, reason, () -> {});
-		Component tip = Component.translatable("golemaddons.pf.join.tooltip", p.leaderName(), PartyUi.role(role));
+		Component tip = Component.translatable("golemaddons.pf.join.tooltip", p.leaderName());
 		return new JoinState(join, true, UiText.GREEN, tip, () -> feature.join(p, role));
 	}
 

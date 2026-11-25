@@ -7,8 +7,6 @@ import com.golemaddons.config.GolemConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,7 +17,7 @@ import net.minecraft.network.chat.Component;
 final class SellSettingsScreen extends EditorScreen {
 	private RuleValidator.Result titleResult;
 	private String commandResult;
-	private Button keyButton;
+	private GolemButton keyButton;
 	private boolean listeningForKey;
 
 	private int titleStatusY;
@@ -49,7 +47,7 @@ final class SellSettingsScreen extends EditorScreen {
 
 		// Sell screen title
 		panels.add(new Panel(px, y, panelW, titleH, Component.translatable("golemaddons.config.sell_screen_title")));
-		EditBox titleBox = new EditBox(font, ix, y + PANEL_LABEL + 2, inner, 20, Component.translatable("golemaddons.config.sell_screen_title"));
+		EditBox titleBox = new GolemEditBox(font, ix, y + PANEL_LABEL + 2, inner, 20, Component.translatable("golemaddons.config.sell_screen_title"));
 		titleBox.setMaxLength(RuleValidator.MAX_PATTERN_LENGTH);
 		titleBox.setValue(settings.sellScreenTitlePattern);
 		titleBox.setHint(Component.translatable("golemaddons.config.sell_screen_title.hint"));
@@ -66,13 +64,13 @@ final class SellSettingsScreen extends EditorScreen {
 		panels.add(new Panel(px, y, panelW, pacingH, Component.translatable("golemaddons.settings.pacing")));
 		int rowY = y + PANEL_LABEL + 2;
 		int delayTextW = font.width(Component.translatable("golemaddons.config.delay", 20, 1000)) + 12;
-		addRenderableWidget(Button.builder(Component.literal("-"), b -> changeDelay(-1)).bounds(ix, rowY, 20, 20).build());
-		addRenderableWidget(Button.builder(Component.literal("+"), b -> changeDelay(1)).bounds(ix + 20 + delayTextW, rowY, 20, 20).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("-"), b -> changeDelay(-1)).bounds(ix, rowY, 20, 20).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("+"), b -> changeDelay(1)).bounds(ix + 20 + delayTextW, rowY, 20, 20).build());
 		delayTextX = ix + 20 + delayTextW / 2;
 		delayTextY = rowY + 6;
 		Component hotbar = Component.translatable("golemaddons.config.protect_hotbar");
 		int hotbarW = font.width(hotbar) + font.width(": OFF") + 16;
-		addRenderableWidget(CycleButton.onOffBuilder(settings.protectHotbar)
+		addRenderableWidget(GolemCycle.onOffBuilder(settings.protectHotbar)
 				.create(ix + inner - hotbarW, rowY, hotbarW, 20, hotbar, (button, value) -> settings.protectHotbar = value));
 		y += pacingH + PANEL_GAP;
 
@@ -80,7 +78,7 @@ final class SellSettingsScreen extends EditorScreen {
 		panels.add(new Panel(px, y, panelW, quickH, Component.translatable("golemaddons.quick.title")));
 		quickHintY = y + PANEL_LABEL + 1;
 		int quickRowY = y + PANEL_LABEL + 12;
-		keyButton = Button.builder(Component.empty(), b -> {
+		keyButton = GolemButton.builder(Component.empty(), b -> {
 			listeningForKey = !listeningForKey;
 			updateKeyButton();
 		}).tooltip(Tooltip.create(Component.translatable("golemaddons.quick.key.tooltip"))).build();
@@ -89,7 +87,7 @@ final class SellSettingsScreen extends EditorScreen {
 		updateKeyButton();
 		addRenderableWidget(keyButton);
 
-		EditBox commandBox = new EditBox(font, ix, quickRowY, inner - keyW - 6, 20, Component.translatable("golemaddons.quick.command"));
+		EditBox commandBox = new GolemEditBox(font, ix, quickRowY, inner - keyW - 6, 20, Component.translatable("golemaddons.quick.command"));
 		commandBox.setMaxLength(QuickSellCommand.MAX_LENGTH + 1);
 		commandBox.setValue(settings.quickSellCommand);
 		commandBox.setHint(Component.translatable("golemaddons.quick.command.hint"));

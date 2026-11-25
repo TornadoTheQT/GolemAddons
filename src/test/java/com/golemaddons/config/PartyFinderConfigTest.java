@@ -27,11 +27,12 @@ class PartyFinderConfigTest {
 		assertEquals("p {name}", pf.inviteCommand);
 		assertEquals("all", pf.typeFilter);
 		assertEquals("newest", pf.sort);
-		assertEquals(java.util.List.of("stun"), pf.roleFilter);
+		// Roles were removed: anything saved by an older version is dropped.
+		assertEquals(java.util.List.of(), pf.roleFilter);
 		assertEquals("", pf.joinAs);
 		assertEquals("gdrag", pf.draft.type);
 		assertEquals(6, pf.draft.max);
-		assertEquals(java.util.Map.of("stun", 5), pf.draft.roles);
+		assertEquals(java.util.Map.of(), pf.draft.roles);
 		assertEquals("", pf.draft.name);
 	}
 

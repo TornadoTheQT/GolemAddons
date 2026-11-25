@@ -1,12 +1,10 @@
 package com.golemaddons.ui;
 
 import com.golemaddons.GolemAddonsClient;
-import com.golemaddons.autosell.RuleValidator;
 import com.golemaddons.config.GolemConfig;
-import com.golemaddons.cosmetics.CosmeticsFeature;
-import com.golemaddons.dragon.DragonCatalog;
-import java.util.Arrays;
-import java.util.Random;
+import com.golemaddons.update.Release;
+import com.golemaddons.update.UpdateChecker;
+import java.util.List;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,39 +14,40 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 /**
- * The GolemAddons main menu: an animated title, drifting particles and one card per feature.
+ * The GolemAddons main menu: an animated title, drifting particles and one card per category (Selling, QoL,
+ * Visuals) plus the Party Finder. Category cards open a {@link CategoryHubScreen} with that category's features.
  *
  * <p>Laid out on a fixed {@link HubCanvas} (640x360 design units) scaled to the window, so it fills the screen
- * the same way whatever the GUI scale. Add a feature by adding a card in {@link #init()}.
+ * the same way whatever the GUI scale. Add a feature by adding a tile to its category in {@link #init()}.
  */
 public final class GolemHubScreen extends Screen {
 	private static final String TITLE = "GolemAddons";
 	private static final float TITLE_SCALE = 3.5f;
 	private static final float TITLE_Y = 30f;
 	private static final float CARD_Y = 116f;
-	private static final float CARD_W = 100f;
+	private static final float CARD_W = 128f;
 	private static final float CARD_H = 172f;
-	private static final float CARD_GAP = 6f;
-	private static final int PARTICLES = 64;
-	/** Number of feature cards; the gametest clicks them by position. */
-	public static final int CARDS = 6;
+	private static final float CARD_GAP = 10f;
+	/** Number of top-level cards. */
+	public static final int CARDS = 4;
 
 	private final Screen parent;
 	/** Kept across re-inits (resize, returning from a sub-screen) so the entrance plays once. */
 	private final long openedAt = Util.getMillis();
-	private final float[][] particles = new float[PARTICLES][];
+	private final HubBackdrop backdrop = new HubBackdrop();
 	private final String version;
 	private HubCanvas canvas;
+	private static final float FOOTER_Y = HubCanvas.HEIGHT - 16;
+	private static final float ICON = 13f;
+	private float hintX;
+	private float versionX;
+	private float iconX;
+	private String shownStatus = "";
+	private long statusChangedAt;
 
 	public GolemHubScreen(Screen parent) {
 		super(Component.literal(TITLE));
 		this.parent = parent;
-		Random random = new Random(0x601E_A5L);
-		for (int i = 0; i < PARTICLES; i++) {
-			// x fraction, start phase, speed (canvas units/s), size (units), twinkle phase
-			particles[i] = new float[] {random.nextFloat(), random.nextFloat(), 6f + random.nextFloat() * 16f,
-					1f + random.nextInt(2), random.nextFloat() * 6.28f};
-		}
 		this.version = FabricLoader.getInstance().getModContainer(GolemAddonsClient.MOD_ID)
 				.map(c -> c.getMetadata().getVersion().getFriendlyString()).orElse("");
 	}
@@ -59,98 +58,119 @@ public final class GolemHubScreen extends Screen {
 		float x = (HubCanvas.WIDTH - (CARDS * CARD_W + (CARDS - 1) * CARD_GAP)) / 2f;
 
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
-				Component.translatable("golemaddons.hub.mining"), Component.translatable("golemaddons.hub.mining.desc"),
-				new ItemStack(Items.DIAMOND_PICKAXE), UiText.ACCENT_2, 0, openedAt, this::miningStatus,
-				() -> minecraft.setScreen(new MiningAutoSellScreen(this))));
+				Component.translatable("golemaddons.hub.selling"), Component.translatable("golemaddons.hub.selling.desc"),
+				new ItemStack(Items.EMERALD), UiText.GOLD, 0, openedAt, HubStatus::selling, () -> minecraft.setScreen(selling())));
 		x += CARD_W + CARD_GAP;
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
-				Component.translatable("golemaddons.hub.dragon"), Component.translatable("golemaddons.hub.dragon.desc"),
-				new ItemStack(Items.DRAGON_HEAD), UiText.ACCENT, 1, openedAt, this::dragonStatus,
-				() -> minecraft.setScreen(new DragonSellerScreen(this))));
+				Component.translatable("golemaddons.hub.qol"), Component.translatable("golemaddons.hub.qol.desc"),
+				new ItemStack(Items.CLOCK), UiText.ACCENT_2, 1, openedAt, HubStatus::qol, () -> minecraft.setScreen(qol())));
 		x += CARD_W + CARD_GAP;
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
-				Component.translatable("golemaddons.hub.settings"), Component.translatable("golemaddons.hub.settings.desc"),
-				new ItemStack(Items.COMPARATOR), UiText.GOLD, 2, openedAt, this::settingsStatus,
-				() -> minecraft.setScreen(new SellSettingsScreen(this))));
-		x += CARD_W + CARD_GAP;
-		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
-				Component.translatable("golemaddons.hub.cosmetics"), Component.translatable("golemaddons.hub.cosmetics.desc"),
-				new ItemStack(Items.ELYTRA), UiText.ACCENT_2, 3, openedAt, this::cosmeticsStatus,
-				() -> minecraft.setScreen(new CosmeticsScreen(this))));
-		x += CARD_W + CARD_GAP;
-		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
-				Component.translatable("golemaddons.hub.autoclicker"), Component.translatable("golemaddons.hub.autoclicker.desc"),
-				new ItemStack(Items.GOLDEN_SWORD), UiText.GOLD, 4, openedAt, this::autoClickerStatus,
-				() -> minecraft.setScreen(new AutoClickerScreen(this))));
+				Component.translatable("golemaddons.hub.visuals"), Component.translatable("golemaddons.hub.visuals.desc"),
+				new ItemStack(Items.ELYTRA), UiText.ACCENT, 2, openedAt, HubStatus::visuals, () -> minecraft.setScreen(visuals())));
 		x += CARD_W + CARD_GAP;
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
 				Component.translatable("golemaddons.hub.partyfinder"), Component.translatable("golemaddons.hub.partyfinder.desc"),
-				new ItemStack(Items.DRAGON_EGG), UiText.ACCENT, 5, openedAt, this::partyFinderStatus,
+				new ItemStack(Items.DRAGON_EGG), UiText.ACCENT, 3, openedAt, HubStatus::partyFinder,
 				() -> minecraft.setScreen(new PartyFinderScreen(this))));
 
 		addRenderableWidget(HubCard.button(canvas, (HubCanvas.WIDTH - 140) / 2f, 306f, 140f, 24f,
-				Component.translatable("gui.done"), UiText.ACCENT, 6, openedAt, this::onClose));
+				Component.translatable("gui.done"), UiText.ACCENT, 4, openedAt, this::onClose));
+
+		// Footer, right to left: "K opens this menu", the version, the refresh button, then what the updater is doing.
+		Component hint = Component.translatable("golemaddons.hub.hint", GolemAddonsClient.openMenuKeyName());
+		hintX = HubCanvas.WIDTH - 12 - font.width(hint);
+		versionX = hintX - 10 - (font.width(versionText()) + 8);
+		iconX = versionX - 6 - ICON;
+		UpdateIcon icon = new UpdateIcon(canvas, iconX, FOOTER_Y - 3, ICON, () -> minecraft.setScreen(new UpdatesScreen(this)));
+		icon.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("golemaddons.hub.update.tooltip")));
+		addRenderableWidget(icon);
 	}
 
-	private HubCard.Status miningStatus() {
-		GolemConfig config = GolemAddonsClient.config().get();
-		int total = config.miningAutoSell.rules.size();
-		long on = config.miningAutoSell.rules.stream().filter(r -> r.enabled).count();
-		return on > 0
-				? new HubCard.Status(Component.translatable("golemaddons.hub.mining.status", on, total), UiText.GREEN)
-				: new HubCard.Status(Component.translatable("golemaddons.hub.mining.status.none"), UiText.GRAY);
+	private Component versionText() {
+		return Component.translatable("golemaddons.hub.version", version);
 	}
 
-	private HubCard.Status dragonStatus() {
-		GolemConfig.DragonSeller s = GolemAddonsClient.config().get().dragonSeller;
-		if (!s.enabled) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.off"), UiText.GRAY);
-		}
-		long dragons = Arrays.stream(DragonCatalog.DragonType.values()).filter(s::sellsDragon).count();
-		return new HubCard.Status(Component.translatable("golemaddons.hub.dragon.status", dragons,
-				DragonCatalog.DragonType.values().length), UiText.ACCENT_2);
+	/** One short line about the updater, or null when there's nothing worth saying. Shown left of the refresh button. */
+	private Component updateStatus() {
+		UpdateChecker checker = UpdateChecker.instance();
+		Release latest = checker.latest();
+		Release newer = checker.newerRelease();
+		return switch (checker.state()) {
+			case IDLE -> null;
+			case CHECKING -> Component.translatable("golemaddons.hub.update.checking");
+			case UP_TO_DATE -> Component.translatable("golemaddons.hub.update.up_to_date");
+			case AVAILABLE -> newer == null ? null : checker.installUnavailable() != null || newer.sha256() == null
+					? Component.translatable("golemaddons.hub.update.available_manual", newer.version())
+					: Component.translatable("golemaddons.hub.update.available", newer.version());
+			case DOWNLOADING -> Component.translatable("golemaddons.hub.update.downloading",
+					latest == null ? 0 : Math.min(100, checker.downloaded() * 100 / Math.max(1, latest.size())));
+			case STAGED -> Component.translatable("golemaddons.hub.update.staged", latest == null ? "" : latest.version());
+			case ERROR -> Component.translatable("golemaddons.hub.update.error");
+		};
 	}
 
-	private HubCard.Status settingsStatus() {
-		String pattern = GolemAddonsClient.config().get().selling.sellScreenTitlePattern;
-		return RuleValidator.validateScreenTitlePattern(pattern).valid()
-				? new HubCard.Status(Component.translatable("golemaddons.hub.settings.status.ok"), UiText.GREEN)
-				: new HubCard.Status(Component.translatable("golemaddons.hub.settings.status.missing"), UiText.YELLOW);
+	private int updateStatusColor() {
+		return switch (UpdateChecker.instance().state()) {
+			case AVAILABLE, STAGED -> UiText.GREEN;
+			case ERROR -> UiText.YELLOW;
+			default -> UiText.GRAY;
+		};
 	}
 
-	private HubCard.Status autoClickerStatus() {
-		GolemConfig.AutoClicker s = GolemAddonsClient.config().get().autoClicker;
-		if (!s.enabled) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.off"), UiText.GRAY);
+	/** Fades the status line in when it changes, and fades "up to date" / errors out after a while. */
+	private float updateStatusAlpha(Component status) {
+		long now = Util.getMillis();
+		String key = status == null ? "" : status.getString();
+		if (!key.equals(shownStatus)) {
+			shownStatus = key;
+			statusChangedAt = now;
 		}
-		if (GolemAddonsClient.autoClickerKey().isUnbound()) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.autoclicker.no_key"), UiText.YELLOW);
-		}
-		return new HubCard.Status(Component.translatable("golemaddons.hub.autoclicker.status", s.minCps, s.maxCps), UiText.GREEN);
+		float in = UiAnim.easeOutCubic((now - statusChangedAt) / 250f);
+		UpdateChecker.State state = UpdateChecker.instance().state();
+		boolean transient_ = state == UpdateChecker.State.UP_TO_DATE || state == UpdateChecker.State.ERROR;
+		float out = transient_ ? 1f - Math.clamp((now - statusChangedAt - 5000) / 600f, 0f, 1f) : 1f;
+		return in * out;
 	}
 
-	private HubCard.Status partyFinderStatus() {
-		com.golemaddons.partyfinder.PartyFinderFeature f = com.golemaddons.partyfinder.PartyFinderFeature.instance();
-		if (f == null || !f.enabled()) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.off"), UiText.GRAY);
-		}
-		var own = f.leading();
-		if (own != null) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.partyfinder.leading", own.size(), own.max()), UiText.GREEN);
-		}
-		if (f.memberOf() != null) return new HubCard.Status(Component.translatable("golemaddons.hub.partyfinder.member"), UiText.GREEN);
-		if (f.outgoing() != null) return new HubCard.Status(Component.translatable("golemaddons.hub.partyfinder.requested"), UiText.YELLOW);
-		return new HubCard.Status(Component.translatable("golemaddons.hub.partyfinder.ready"), UiText.ACCENT_2);
+	private Screen selling() {
+		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.selling"), UiText.GOLD, List.of(
+				new CategoryHubScreen.Tile("golemaddons.hub.mining", new ItemStack(Items.DIAMOND_PICKAXE), UiText.ACCENT_2,
+						HubStatus::mining, MiningAutoSellScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.dragon", new ItemStack(Items.DRAGON_HEAD), UiText.ACCENT,
+						HubStatus::dragon, DragonSellerScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.settings", new ItemStack(Items.COMPARATOR), UiText.GOLD,
+						HubStatus::sellSettings, SellSettingsScreen::new)));
 	}
 
-	private HubCard.Status cosmeticsStatus() {
-		CosmeticsFeature feature = CosmeticsFeature.instance();
-		if (feature == null || !feature.active()) {
-			return new HubCard.Status(Component.translatable("golemaddons.hub.off"), UiText.GRAY);
-		}
-		return feature.paused()
-				? new HubCard.Status(Component.translatable("golemaddons.hub.cosmetics.status.paused"), UiText.YELLOW)
-				: new HubCard.Status(Component.translatable("golemaddons.hub.cosmetics.status.on"), UiText.GREEN);
+	private Screen qol() {
+		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.qol"), UiText.ACCENT_2, List.of(
+				new CategoryHubScreen.Tile("golemaddons.hub.autoclicker", new ItemStack(Items.GOLDEN_SWORD), UiText.GOLD,
+						HubStatus::autoClicker, AutoClickerScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.camera", new ItemStack(Items.SPYGLASS), UiText.ACCENT_2,
+						HubStatus::camera, CameraScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.terminals", new ItemStack(Items.LIME_STAINED_GLASS_PANE), UiText.ACCENT,
+						HubStatus::terminals, TerminalsScreen::new)));
+	}
+
+	private Screen visuals() {
+		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.visuals"), UiText.ACCENT, List.of(
+				new CategoryHubScreen.Tile("golemaddons.hub.cosmetics", new ItemStack(Items.ELYTRA), UiText.ACCENT_2,
+						HubStatus::cosmetics, CosmeticsScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.animations", new ItemStack(Items.DIAMOND_SWORD), UiText.ACCENT,
+						HubStatus::animations, AnimationsScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.hitboxes", new ItemStack(Items.END_CRYSTAL), UiText.GOLD,
+						HubStatus::hitboxes, parent -> {
+							toggleHitboxes();
+							return null;
+						})));
+	}
+
+	/** The hitbox tile is a toggle: saved right away, like the hitbox key. */
+	private static void toggleHitboxes() {
+		GolemConfig next = GolemAddonsClient.config().get().copy();
+		next.render.dragonHitboxes = !next.render.dragonHitboxes;
+		GolemAddonsClient.config().save(next);
 	}
 
 	@Override
@@ -165,26 +185,7 @@ public final class GolemHubScreen extends Screen {
 	@Override
 	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
 		super.extractBackground(graphics, mouseX, mouseY, delta);
-		graphics.fill(0, 0, width, height, 0xA008070E);
-		graphics.fillGradient(0, 0, width, height / 2, 0x38281A4A, 0x00000000);
-		graphics.fillGradient(0, height / 2, width, height, 0x00000000, 0x3010302C);
-
-		float t = elapsed();
-		float fadeIn = Math.min(1f, t / 0.8f);
-		float s = canvas.scale();
-		for (int i = 0; i < PARTICLES; i++) {
-			float[] p = particles[i];
-			float travel = height + 12f;
-			float y = height + 6f - ((p[1] * travel + t * p[2] * s) % travel);
-			float x = p[0] * width;
-			float twinkle = 0.35f + 0.35f * (float) Math.sin(t * 1.7f + p[4]);
-			int color = UiText.withAlpha(i % 3 == 0 ? UiText.ACCENT_2 : UiText.ACCENT, twinkle * fadeIn * 0.7f);
-			// Plain fill at scaled size: no per-particle matrix push/pop.
-			int size = Math.max(1, Math.round(p[3] * s));
-			int ix = Math.round(x);
-			int iy = Math.round(y);
-			graphics.fill(ix, iy, ix + size, iy + size, color);
-		}
+		backdrop.extract(graphics, width, height, canvas.scale(), elapsed());
 	}
 
 	@Override
@@ -236,9 +237,23 @@ public final class GolemHubScreen extends Screen {
 			graphics.pose().popMatrix();
 		}
 
-		graphics.text(font, "v" + version, 12, HubCanvas.HEIGHT - 16, UiText.DARK_GRAY);
 		Component hint = Component.translatable("golemaddons.hub.hint", GolemAddonsClient.openMenuKeyName());
-		graphics.text(font, hint, HubCanvas.WIDTH - 12 - font.width(hint), HubCanvas.HEIGHT - 16, UiText.DARK_GRAY);
+		int fy = Math.round(FOOTER_Y);
+		graphics.text(font, hint, Math.round(hintX), fy, UiText.DARK_GRAY);
+		// Version pill.
+		Component versionText = versionText();
+		int vx = Math.round(versionX);
+		int vw = font.width(versionText) + 8;
+		graphics.fill(vx, fy - 3, vx + vw, fy + 10, 0x90141220);
+		graphics.outline(vx, fy - 3, vw, 13, UiText.withAlpha(UiText.ACCENT, 0.6f));
+		graphics.text(font, versionText, vx + 4, fy, UiText.GRAY);
+		// Updater status, left of the refresh button.
+		Component status = updateStatus();
+		float alpha = updateStatusAlpha(status);
+		if (status != null && alpha > 0.02f) {
+			int sx = Math.round(iconX - 6 - font.width(status) + (1f - alpha) * 4f);
+			graphics.text(font, status, sx, fy, UiText.withAlpha(updateStatusColor(), alpha));
+		}
 		graphics.pose().popMatrix();
 	}
 }

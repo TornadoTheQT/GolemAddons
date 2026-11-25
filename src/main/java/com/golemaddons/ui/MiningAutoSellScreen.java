@@ -6,8 +6,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -74,20 +72,20 @@ final class MiningAutoSellScreen extends EditorScreen {
 			int y = listTop + (i - first) * ROW_HEIGHT;
 			ruleValid.put(rule, RuleValidator.validateNamePattern(rule.namePattern, rule.caseInsensitive).valid()
 					&& RuleValidator.normalizeItemId(rule.itemId).valid());
-			addRenderableWidget(CycleButton.onOffBuilder(rule.enabled).displayOnlyValue()
+			addRenderableWidget(GolemCycle.onOffBuilder(rule.enabled).displayOnlyValue()
 					.create(listX, y, TOGGLE_WIDTH, 20, Component.translatable("golemaddons.config.rule.enabled"), (button, value) -> rule.enabled = value));
-			addRenderableWidget(Button.builder(edit, b -> editRule(rule)).bounds(editX, y, editW, 20).build());
-			addRenderableWidget(Button.builder(delete, b -> confirmDelete(rule)).bounds(deleteX, y, deleteW, 20).build());
+			addRenderableWidget(GolemButton.builder(edit, b -> editRule(rule)).bounds(editX, y, editW, 20).build());
+			addRenderableWidget(GolemButton.builder(delete, b -> confirmDelete(rule)).bounds(deleteX, y, deleteW, 20).build());
 		}
 
 		int rowY = top + panelH + PANEL_GAP;
 		Component add = Component.translatable("golemaddons.config.add_rule");
 		int addW = buttonWidth(add, 120);
-		addRenderableWidget(Button.builder(add, b -> addRule()).bounds((width - addW) / 2, rowY, addW, 20).build());
+		addRenderableWidget(GolemButton.builder(add, b -> addRule()).bounds((width - addW) / 2, rowY, addW, 20).build());
 		if (pageCount() > 1) {
-			Button prev = addRenderableWidget(Button.builder(Component.literal("<"), b -> changePage(-1))
+			GolemButton prev = addRenderableWidget(GolemButton.builder(Component.literal("<"), b -> changePage(-1))
 					.bounds(px, rowY, 20, 20).build());
-			Button next = addRenderableWidget(Button.builder(Component.literal(">"), b -> changePage(1))
+			GolemButton next = addRenderableWidget(GolemButton.builder(Component.literal(">"), b -> changePage(1))
 					.bounds(px + panelW - 20, rowY, 20, 20).build());
 			prev.active = page > 0;
 			next.active = page < pageCount() - 1;

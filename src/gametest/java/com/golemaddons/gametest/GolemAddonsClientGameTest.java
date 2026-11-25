@@ -1,6 +1,12 @@
 package com.golemaddons.gametest;
 
+import com.golemaddons.GolemAddonsClient;
+import com.golemaddons.config.GolemConfig;
 import com.golemaddons.partyfinder.PartyFinderFeature;
+import com.golemaddons.terminals.TerminalFeature;
+import com.golemaddons.terminals.TerminalPractice;
+import com.golemaddons.terminals.TerminalPuzzle;
+import com.golemaddons.terminals.TerminalType;
 import com.golemaddons.ui.GolemHubScreen;
 import com.golemaddons.ui.PartyFinderScreen;
 import com.google.gson.JsonObject;
@@ -18,9 +24,11 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
  * so layout problems (and crashes, e.g. in the player preview) show up without playing.
  */
 public class GolemAddonsClientGameTest implements FabricClientGameTest {
-	private static final String[] CARDS = {
-			"golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.settings",
-			"golemaddons.hub.cosmetics", "golemaddons.hub.autoclicker", "golemaddons.hub.partyfinder"};
+	/** Each top-level category card and the feature tiles inside it (tiles that open a screen). */
+	private static final String[][] CATEGORIES = {
+			{"golemaddons.hub.selling", "golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.settings"},
+			{"golemaddons.hub.qol", "golemaddons.hub.autoclicker", "golemaddons.hub.camera", "golemaddons.hub.terminals"},
+			{"golemaddons.hub.visuals", "golemaddons.hub.cosmetics", "golemaddons.hub.animations"}};
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
@@ -29,14 +37,86 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			context.setScreen(() -> new GolemHubScreen(null));
 			context.waitTicks(30); // let the entrance animation finish
 			context.takeScreenshot("golemaddons-hub");
-			for (String card : CARDS) {
+			for (String[] category : CATEGORIES) {
 				context.setScreen(() -> new GolemHubScreen(null));
 				context.waitTicks(30);
-				click(context, card);
-				context.waitTicks(10);
-				context.takeScreenshot(card.replace('.', '-'));
+				click(context, category[0]);
+				context.waitTicks(30);
+				context.takeScreenshot(category[0].replace('.', '-'));
+				for (int i = 1; i < category.length; i++) {
+					click(context, category[i]);
+					context.waitTicks(10);
+					context.takeScreenshot(category[i].replace('.', '-'));
+					context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE); // back to the category
+					context.waitTicks(30);
+				}
 			}
-			// From the party finder, open My Party (the create form) too.
+			// Animation presets tab.
+			context.setScreen(() -> new GolemHubScreen(null));
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.visuals");
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.animations");
+			context.waitTicks(10);
+			click(context, "golemaddons.animations.tabs", 0.5); // Options, the middle of the three tabs
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-animations-options");
+			click(context, "golemaddons.animations.tabs", 0.85); // Presets
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-animations-presets");
+
+			// Terminals: the Look tab, then every practice terminal solved by clicking the GUI like a player.
+			context.setScreen(() -> new GolemHubScreen(null));
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.qol");
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.terminals");
+			context.waitTicks(10);
+			click(context, "golemaddons.terminals.tabs", 0.5);
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-terminals-clicking");
+			click(context, "golemaddons.terminals.tabs", 0.85);
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-terminals-look");
+			context.setScreen(() -> null);
+			setTerminals(context, t -> t.othersSaturation = 15);
+			for (TerminalType type : TerminalType.values()) {
+				solveByClicking(context, type, Mode.CLICK, "golemaddons-terminal-" + type.name().toLowerCase(java.util.Locale.ROOT));
+			}
+			// Hover click: only move the cursor over the highlights, never press a button.
+			setTerminals(context, t -> t.hoverClick = true);
+			solveByClicking(context, TerminalType.PANES, Mode.HOVER, "golemaddons-terminal-hover");
+			solveByClicking(context, TerminalType.RUBIX, Mode.HOVER, null);
+			// Auto terms: no input at all.
+			setTerminals(context, t -> {
+				t.hoverClick = false;
+				t.autoTerms = true;
+			});
+			for (TerminalType type : TerminalType.values()) {
+				solveByClicking(context, type, Mode.AUTO, type == TerminalType.MELODY ? "golemaddons-terminal-auto-melody" : null);
+			}
+			setTerminals(context, t -> t.autoTerms = false);
+			// The vanilla chest with highlights instead of the compact GUI.
+			setTerminals(context, t -> {
+				t.hoverClick = false;
+				t.customGui = false;
+			});
+			solveByClicking(context, TerminalType.ORDER, Mode.CLICK, "golemaddons-terminal-highlights");
+			setTerminals(context, t -> t.customGui = true);
+
+			// The refresh button in the hub footer: checks for an update and shows the result next to it.
+			context.setScreen(() -> new GolemHubScreen(null));
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.update.button");
+			context.waitTicks(60);
+			context.takeScreenshot("golemaddons-hub-update-check");
+
+			// Party finder, and from it My Party (the create form).
+			context.setScreen(() -> new GolemHubScreen(null));
+			context.waitTicks(30);
+			click(context, "golemaddons.hub.partyfinder");
+			context.waitTicks(10);
+			context.takeScreenshot("golemaddons-hub-partyfinder");
 			click(context, "golemaddons.pf.create");
 			context.waitTicks(10);
 			context.takeScreenshot("golemaddons-pf-my-party");
@@ -50,6 +130,50 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("golemaddons-pf-leading");
 			context.setScreen(() -> null);
+		}
+	}
+
+	private static void setTerminals(ClientGameTestContext context, java.util.function.Consumer<GolemConfig.Terminals> change) {
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			change.accept(next.terminals);
+			if (!GolemAddonsClient.config().save(next)) throw new AssertionError("config not saved");
+		});
+	}
+
+	/**
+	 * Opens a practice terminal and solves it through the real GUI: the cursor goes to the next highlighted tile
+	 * and clicks (or, with hover click, only rests there). Fails on any wrong click or if it never finishes.
+	 */
+	private enum Mode {CLICK, HOVER, AUTO}
+
+	private static void solveByClicking(ClientGameTestContext context, TerminalType type, Mode mode, String screenshot) {
+		context.runOnClient(mc -> TerminalPractice.start(java.util.List.of(type)));
+		context.waitTicks(5);
+		TerminalPuzzle puzzle = context.computeOnClient(mc -> TerminalPractice.current().puzzle());
+		if (screenshot != null) context.takeScreenshot(screenshot);
+		for (int tick = 0; !context.computeOnClient(mc -> puzzle.solved()); tick++) {
+			if (tick > 1200) throw new AssertionError(type + " was not solved");
+			double[] target = context.computeOnClient(mc -> {
+				double[] t = TerminalFeature.nextTarget();
+				if (t == null) return null;
+				double scale = mc.getWindow().getGuiScale();
+				return new double[] {t[0] * scale, t[1] * scale};
+			});
+			if (target == null || mode == Mode.AUTO) {
+				context.waitTick();
+				continue;
+			}
+			context.getInput().setCursorPos(target[0], target[1]);
+			context.waitTick();
+			if (mode == Mode.CLICK) context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(mode == Mode.HOVER ? 4 : 2);
+		}
+		int misclicks = context.computeOnClient(mc -> puzzle.misclicks());
+		if (misclicks != 0) throw new AssertionError(type + ": " + misclicks + " wrong clicks");
+		context.waitTicks(15); // the practice run closes its screen once done
+		if (context.computeOnClient(mc -> mc.screen instanceof TerminalPractice.PracticeScreen)) {
+			throw new AssertionError(type + ": practice screen still open after solving");
 		}
 	}
 
@@ -76,12 +200,17 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 
 	/** Clicks the hub card whose title is {@code key} (cards are custom widgets, so find them by their label). */
 	private static void click(ClientGameTestContext context, String key) {
+		click(context, key, 0.5);
+	}
+
+	/** Clicks the widget labelled {@code key} at {@code fraction} of its width. */
+	private static void click(ClientGameTestContext context, String key, double fraction) {
 		double[] pos = context.computeOnClient(mc -> {
 			for (var child : mc.screen.children()) {
 				if (child instanceof AbstractWidget w && w.getMessage().getContents() instanceof TranslatableContents t
-						&& t.getKey().equals(key)) {
+						&& (t.getKey().equals(key))) {
 					double scale = mc.getWindow().getGuiScale();
-					return new double[] {(w.getX() + w.getWidth() / 2.0) * scale, (w.getY() + w.getHeight() / 2.0) * scale};
+					return new double[] {(w.getX() + w.getWidth() * fraction) * scale, (w.getY() + w.getHeight() / 2.0) * scale};
 				}
 			}
 			throw new AssertionError("No card " + key);

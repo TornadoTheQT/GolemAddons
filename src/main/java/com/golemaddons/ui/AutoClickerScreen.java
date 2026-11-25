@@ -6,8 +6,6 @@ import com.golemaddons.config.GolemConfig;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -18,7 +16,7 @@ import net.minecraft.network.chat.Component;
 final class AutoClickerScreen extends EditorScreen {
 	private static final int ROW = 20;
 
-	private Button keyButton;
+	private GolemButton keyButton;
 	private boolean listening;
 	private int minTextX;
 	private int maxTextX;
@@ -43,9 +41,9 @@ final class AutoClickerScreen extends EditorScreen {
 
 		panels.add(new Panel(px, y, panelW, mainH, Component.translatable("golemaddons.autoclicker.panel.main")));
 		int rowY = y + PANEL_LABEL + 2;
-		addRenderableWidget(CycleButton.onOffBuilder(s.enabled)
+		addRenderableWidget(GolemCycle.onOffBuilder(s.enabled)
 				.create(ix, rowY, inner, ROW, Component.translatable("golemaddons.autoclicker.enabled"), (b, v) -> s.enabled = v));
-		keyButton = Button.builder(Component.empty(), b -> {
+		keyButton = GolemButton.builder(Component.empty(), b -> {
 			listening = !listening;
 			updateKeyButton();
 		}).tooltip(Tooltip.create(Component.translatable("golemaddons.autoclicker.key.tooltip"))).bounds(ix, rowY + ROW + 4, inner, ROW).build();
@@ -57,10 +55,10 @@ final class AutoClickerScreen extends EditorScreen {
 		rowY = y + PANEL_LABEL + 2;
 		int half = (inner - 2 * GAP) / 2;
 		// [-] min [+]   [-] max [+]
-		addRenderableWidget(Button.builder(Component.literal("-"), b -> change(-1, 0)).bounds(ix, rowY, ROW, ROW).build());
-		addRenderableWidget(Button.builder(Component.literal("+"), b -> change(1, 0)).bounds(ix + half - ROW, rowY, ROW, ROW).build());
-		addRenderableWidget(Button.builder(Component.literal("-"), b -> change(0, -1)).bounds(ix + half + 2 * GAP, rowY, ROW, ROW).build());
-		addRenderableWidget(Button.builder(Component.literal("+"), b -> change(0, 1)).bounds(ix + inner - ROW, rowY, ROW, ROW).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("-"), b -> change(-1, 0)).bounds(ix, rowY, ROW, ROW).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("+"), b -> change(1, 0)).bounds(ix + half - ROW, rowY, ROW, ROW).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("-"), b -> change(0, -1)).bounds(ix + half + 2 * GAP, rowY, ROW, ROW).build());
+		addRenderableWidget(GolemButton.builder(Component.literal("+"), b -> change(0, 1)).bounds(ix + inner - ROW, rowY, ROW, ROW).build());
 		minTextX = ix + half / 2;
 		maxTextX = ix + half + 2 * GAP + half / 2;
 		cpsTextY = rowY + 6;
