@@ -125,14 +125,56 @@ class InstallerTest {
 	}
 
 	@Test
-	void locateOnlyAcceptsAGolemAddonsJarInMods() throws Exception {
+	void locateFindsTheLoadedJarWhereverItIs() throws Exception {
 		Path mods = modsWithCurrent("0.1.4");
-		assertNotNull(UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), mods).installer());
-		assertEquals(UpdateInstaller.Unavailable.NOT_A_JAR, UpdateInstaller.locate(List.of(mods), mods).unavailable());
-		assertEquals(UpdateInstaller.Unavailable.NOT_IN_MODS,
-				UpdateInstaller.locate(List.of(mods.resolve("fabric-api.jar")), mods).unavailable());
-		Path elsewhere = TestJars.write(temp.resolve("golemaddons-0.1.4.jar"), TestJars.modJar("golemaddons", "0.1.4"));
-		assertEquals(UpdateInstaller.Unavailable.NOT_IN_MODS, UpdateInstaller.locate(List.of(elsewhere), mods).unavailable());
+		assertEquals(mods.resolve("golemaddons-0.1.4.jar").toRealPath(),
+				UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), "0.1.4").installer().currentJar());
+		assertEquals(UpdateInstaller.Unavailable.NOT_A_JAR, UpdateInstaller.locate(List.of(mods), "0.1.4").unavailable());
+		assertEquals(UpdateInstaller.Unavailable.NOT_A_JAR,
+				UpdateInstaller.locate(List.of(mods.resolve("fabric-api.jar")), "0.1.4").unavailable(), "another mod's jar is never used");
+		// Any folder at all, however deep, as long as it is the jar that was loaded.
+		Path deep = Files.createDirectories(temp.resolve("Some Launcher/instances/my pack/minecraft/mods/extra"));
+		Path elsewhere = TestJars.write(deep.resolve("GolemAddons (1).jar"), TestJars.modJar("golemaddons", "0.1.4"));
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods, elsewhere), "0.1.4").installer();
+		assertEquals(elsewhere.toRealPath(), installer.currentJar(), "the first candidate that is our jar wins");
+		assertEquals(deep.toRealPath(), installer.folder());
+	}
+
+	@Test
+	void aRenamedJarAnywhereIsReplacedAndTheUpdateLandsBesideIt() throws Exception {
+		Path folder = Files.createDirectories(temp.resolve("instance/mods"));
+		Path running = TestJars.write(folder.resolve("GolemAddons-latest.jar"), TestJars.modJar("golemaddons", "0.1.9"));
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(running), "0.1.9").installer();
+		byte[] jar = TestJars.modJar("golemaddons", "0.1.10");
+		files.put("/golemaddons-0.1.10.jar", jar);
+		installer.stage(release("0.1.10", jar, TestJars.sha256(jar)), downloader, n -> { });
+		installer.swapIfStaged();
+		assertFalse(Files.exists(running));
+		assertArrayEquals(jar, Files.readAllBytes(folder.resolve("golemaddons-0.1.10.jar")));
+		assertTrue(Files.readString(folder.resolve(UpdateInstaller.LOG_NAME)).contains("Replaced GolemAddons-latest.jar"));
+	}
+
+	@Test
+	void anUnfinishedUpdateIsResumedAtTheNextStart() throws Exception {
+		Path mods = modsWithCurrent("0.1.4");
+		TestJars.write(mods.resolve("golemaddons-0.1.6.jar.part"), TestJars.modJar("golemaddons", "0.1.6"));
+		TestJars.write(mods.resolve("golemaddons-0.1.5.jar.part"), TestJars.modJar("golemaddons", "0.1.5"));
+		TestJars.write(mods.resolve("golemaddons-0.1.3.jar.part"), TestJars.modJar("golemaddons", "0.1.3"));
+		TestJars.write(mods.resolve("golemaddons-0.1.7.jar.part"), TestJars.modJar("someone-else", "0.1.7"));
+		Files.writeString(mods.resolve("golemaddons-0.1.6.jar.new"), "half copied");
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), "0.1.4").installer();
+
+		assertEquals("0.1.6", installer.resumeOrCleanUp(), "the newest real GolemAddons download is picked up again");
+		assertTrue(installer.staged());
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.5.jar.part")));
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.3.jar.part")));
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.7.jar.part")), "a mislabelled download is a leftover");
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.6.jar.new")));
+
+		installer.swapIfStaged();
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.4.jar")));
+		assertTrue(Files.exists(mods.resolve("golemaddons-0.1.6.jar")));
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.6.jar.part")));
 	}
 
 	/** Lunar Client keeps mods one folder down (mods/fabric-26.1.2/); updates go next to the running jar there. */
@@ -145,13 +187,9 @@ class InstallerTest {
 		TestJars.write(sub.resolve("fabric-api.jar"), TestJars.modJar("fabric-api", "1.0.0"));
 		TestJars.write(sub.resolve("golemaddons-notes.jar"), TestJars.modJar("someone-else", "1.0.0"));
 
-		UpdateInstaller installer = UpdateInstaller.locate(List.of(running), mods).installer();
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(running), "0.1.6").installer();
 		assertNotNull(installer);
 		assertEquals(sub.toRealPath(), installer.folder());
-		// Two folders down is too far.
-		Path deep = Files.createDirectories(sub.resolve("nested"));
-		Path deepJar = TestJars.write(deep.resolve("golemaddons-0.1.6.jar"), TestJars.modJar("golemaddons", "0.1.6"));
-		assertEquals(UpdateInstaller.Unavailable.NOT_IN_MODS, UpdateInstaller.locate(List.of(deepJar), mods).unavailable());
 
 		byte[] jar = TestJars.modJar("golemaddons", "0.1.7");
 		files.put("/golemaddons-0.1.7.jar", jar);
@@ -165,12 +203,46 @@ class InstallerTest {
 		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.7.jar")));
 	}
 
+	/** The Windows path: the helper process (run here in-process, the game already gone) finishes the swap. */
+	@Test
+	void theHelperReplacesTheOldJarOnceTheGameHasExited() throws Exception {
+		Path folder = Files.createDirectories(temp.resolve("win/mods"));
+		Path old = TestJars.write(folder.resolve("golemaddons-0.1.9.jar"), TestJars.modJar("golemaddons", "0.1.9"));
+		byte[] jar = TestJars.modJar("golemaddons", "0.1.10");
+		Path part = TestJars.write(folder.resolve("golemaddons-0.1.10.jar.part"), jar);
+		Path log = folder.resolve(UpdateInstaller.LOG_NAME);
+		long gone = Long.MAX_VALUE; // no such process
+		SwapHelper.main(new String[] {Long.toString(gone), old.toString(), part.toString(), folder.resolve("golemaddons-0.1.10.jar").toString(),
+				log.toString()});
+		assertFalse(Files.exists(old));
+		assertArrayEquals(jar, Files.readAllBytes(folder.resolve("golemaddons-0.1.10.jar")));
+		assertFalse(Files.exists(folder.resolve("golemaddons-0.1.10.jar.new")));
+		assertTrue(Files.readString(log).contains("[helper] Replaced golemaddons-0.1.9.jar"));
+
+		// Paths outside the jar's own folder are refused outright.
+		Path other = Files.createDirectories(temp.resolve("elsewhere"));
+		Path victim = TestJars.write(other.resolve("victim.jar"), TestJars.modJar("x", "1"));
+		SwapHelper.main(new String[] {Long.toString(gone), victim.toString(), part.toString(), folder.resolve("golemaddons-0.1.11.jar").toString(),
+				log.toString()});
+		assertTrue(Files.exists(victim));
+	}
+
+	@Test
+	void aDownloadThatIsNotNewerIsJustCleanedUp() throws Exception {
+		Path mods = modsWithCurrent("0.1.6");
+		TestJars.write(mods.resolve("golemaddons-0.1.6.jar.part"), TestJars.modJar("golemaddons", "0.1.6"));
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.6.jar")), "0.1.6").installer();
+		assertNull(installer.resumeOrCleanUp());
+		assertFalse(installer.staged());
+		assertFalse(Files.exists(mods.resolve("golemaddons-0.1.6.jar.part")));
+	}
+
 	@Test
 	void stagesThenSwapsOnlyTheRunningJar() throws Exception {
 		Path mods = modsWithCurrent("0.1.4");
 		byte[] jar = TestJars.modJar("golemaddons", "0.1.5");
 		files.put("/golemaddons-0.1.5.jar", jar);
-		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), mods).installer();
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), "0.1.4").installer();
 
 		installer.stage(release("0.1.5", jar, TestJars.sha256(jar)), downloader, n -> { });
 		assertTrue(installer.staged());
@@ -190,7 +262,7 @@ class InstallerTest {
 	@Test
 	void refusesUnverifiableOrMislabelledDownloads() throws Exception {
 		Path mods = modsWithCurrent("0.1.4");
-		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), mods).installer();
+		UpdateInstaller installer = UpdateInstaller.locate(List.of(mods.resolve("golemaddons-0.1.4.jar")), "0.1.4").installer();
 
 		byte[] jar = TestJars.modJar("golemaddons", "0.1.5");
 		files.put("/golemaddons-0.1.5.jar", jar);

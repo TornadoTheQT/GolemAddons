@@ -495,7 +495,6 @@
 	"golemaddons.updates.error.download.size_mismatch": "Download stopped: the file size is wrong",
 	"golemaddons.updates.error.download.checksum": "Download rejected: it doesn't match GitHub's checksum",
 	"golemaddons.updates.unavailable.not_a_jar": "Installing needs the mod to run from a jar (not a development build).",
-	"golemaddons.updates.unavailable.not_in_mods": "The mod jar isn't in this game's mods folder (or a folder inside it), so install it from the release page.",
 	"golemaddons.updates.toast.title": "GolemAddons update",
 	"golemaddons.updates.toast.available": "v%s is out. Open the menu (%s) to install.",
 	"golemaddons.updates.toast.staged": "v%s is ready. Restart the game to finish.",
@@ -614,5 +613,6 @@
 	"golemaddons.terminals.auto.tooltip": "Solves terminals by itself, no mouse needed: one correct click every Click delay, after the First click delay. Servers may treat this as cheating. Use at your own risk.",
 	"golemaddons.hub.terminals.status.auto": "Auto terms on",
 	"golemaddons.terminals.others_saturation": "Saturation",
-	"golemaddons.terminals.others_saturation.tooltip": "How much colour the wrong items keep. 0% is grey, 100% unchanged."
+	"golemaddons.terminals.others_saturation.tooltip": "How much colour the wrong items keep. 0% is grey, 100% unchanged.",
+	"golemaddons.updates.unavailable.not_writable": "The folder the mod jar is in can't be written to, so install it from the release page."
 }

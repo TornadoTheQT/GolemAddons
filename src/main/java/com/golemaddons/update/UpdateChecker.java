@@ -74,17 +74,21 @@ public final class UpdateChecker {
 	public void register(ConfigManager config) {
 		this.config = config;
 		ModContainer self = FabricLoader.getInstance().getModContainer(GolemAddonsClient.MOD_ID).orElse(null);
-		List<Path> origin = self != null ? self.getOrigin().getKind() == net.fabricmc.loader.api.metadata.ModOrigin.Kind.PATH
-				? self.getOrigin().getPaths() : List.of() : List.of();
-		UpdateInstaller.Located located = UpdateInstaller.locate(origin, FabricLoader.getInstance().getGameDir().resolve("mods"));
+		// Where the mod was really loaded from: Fabric's record of it, then the jar this class came out of.
+		List<Path> candidates = new java.util.ArrayList<>();
+		if (self != null && self.getOrigin().getKind() == net.fabricmc.loader.api.metadata.ModOrigin.Kind.PATH) {
+			candidates.addAll(self.getOrigin().getPaths());
+		}
+		Path codeSource = codeSource();
+		if (codeSource != null) candidates.add(codeSource);
+		UpdateInstaller.Located located = UpdateInstaller.locate(candidates, currentVersion);
 		installer = located.installer();
 		unavailable = located.unavailable();
 		if (installer != null) {
-			LOGGER.info("Updates install into {}", installer.folder());
-			worker.execute(installer::cleanUpLeftovers);
+			LOGGER.info("Updates replace {}", installer.currentJar());
+			worker.execute(installer::resumeOrCleanUp);
 		} else {
-			LOGGER.info("Updates can't be installed from here ({}): loaded from {}, mods folder {}", unavailable, origin,
-					FabricLoader.getInstance().getGameDir().resolve("mods"));
+			LOGGER.info("Updates can't be installed from here ({}): loaded from {}", unavailable, candidates);
 		}
 
 		ClientLifecycleEvents.CLIENT_STARTED.register(mc -> {
@@ -93,6 +97,17 @@ public final class UpdateChecker {
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> swap());
 		// Fallback when the game is closed without the normal shutdown (e.g. the window is killed).
 		Runtime.getRuntime().addShutdownHook(new Thread(this::swap, "GolemAddons update swap"));
+	}
+
+	private static Path codeSource() {
+		try {
+			var source = UpdateChecker.class.getProtectionDomain().getCodeSource();
+			if (source == null || source.getLocation() == null) return null;
+			var uri = source.getLocation().toURI();
+			return "file".equalsIgnoreCase(uri.getScheme()) ? Path.of(uri) : null;
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	private void swap() {
