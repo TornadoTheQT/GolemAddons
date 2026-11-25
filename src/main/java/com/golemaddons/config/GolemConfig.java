@@ -370,7 +370,7 @@ public final class GolemConfig {
 		public static final int MAX_DELAY_TICKS = 20;
 
 		/** Regex fully matched against the NPC sell GUI's title. Blank disables all selling. */
-		public String sellScreenTitlePattern = "";
+		public String sellScreenTitlePattern = "Upgrades Shop";
 		public int clickDelayTicks = 4;
 		public boolean protectHotbar = true;
 		/** Command the quick-sell key runs before selling, without the slash. Blank turns quick sell off. */

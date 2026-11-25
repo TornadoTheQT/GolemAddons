@@ -79,8 +79,8 @@ Other useful tasks:
 Quick sell does the whole thing with one key: it runs a command (default `/shop`), waits for your sell screen to open, sells everything selected, then closes the GUI like pressing Escape.
 
 1. In **Sell Settings → Quick sell**, set the command (without or with the `/`).
-2. Click **Key** and press the key you want to use. Escape clears the binding. The key is saved immediately; you can also change it under Controls → GolemAddons.
-3. Press that key while no GUI is open.
+2. The key is **I** by default. To change it, click **Key** and press another key. Escape clears the binding. The key is saved immediately; you can also change it under Controls → GolemAddons.
+3. Press the key while no GUI is open.
 
 How it behaves:
 - If the command doesn't open a screen matching your sell screen title within 5 seconds, it stops and tells you the title it saw.
@@ -92,7 +92,7 @@ Sell Settings:
 
 | Setting | Default | Meaning |
 |---|---|---|
-| Sell screen title | *(blank)* | Regex the whole GUI title must match. Blank means selling is off. |
+| Sell screen title | `Upgrades Shop` | Regex the whole GUI title must match. Blank means selling is off. |
 | Delay | 4 ticks (200 ms) | Time between clicks, from 1 to 20 ticks. |
 | Protect hotbar | On | Hotbar slots are never sold. |
 | Quick sell command | `shop` | Run by the quick-sell key. Blank turns quick sell off. |

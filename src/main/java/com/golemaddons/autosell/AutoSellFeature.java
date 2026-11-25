@@ -54,7 +54,7 @@ public final class AutoSellFeature {
 		this.sellKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.golemaddons.autosell", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category));
 		this.quickSellKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key.golemaddons.quicksell", InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), category));
+				"key.golemaddons.quicksell", InputConstants.Type.KEYSYM, InputConstants.KEY_I, category));
 	}
 
 	public KeyMapping quickSellKey() {
