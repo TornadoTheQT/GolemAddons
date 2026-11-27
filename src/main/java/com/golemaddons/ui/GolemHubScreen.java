@@ -25,11 +25,11 @@ public final class GolemHubScreen extends Screen {
 	private static final float TITLE_SCALE = 3.5f;
 	private static final float TITLE_Y = 30f;
 	private static final float CARD_Y = 116f;
-	private static final float CARD_W = 128f;
+	private static final float CARD_W = 114f;
 	private static final float CARD_H = 172f;
-	private static final float CARD_GAP = 10f;
+	private static final float CARD_GAP = 8f;
 	/** Number of top-level cards. */
-	public static final int CARDS = 4;
+	public static final int CARDS = 5;
 
 	private final Screen parent;
 	/** Kept across re-inits (resize, returning from a sub-screen) so the entrance plays once. */
@@ -66,16 +66,20 @@ public final class GolemHubScreen extends Screen {
 				new ItemStack(Items.CLOCK), UiText.ACCENT_2, 1, openedAt, HubStatus::qol, () -> minecraft.setScreen(qol())));
 		x += CARD_W + CARD_GAP;
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
+				Component.translatable("golemaddons.hub.combat"), Component.translatable("golemaddons.hub.combat.desc"),
+				new ItemStack(Items.ENDER_EYE), UiText.RED, 2, openedAt, HubStatus::combat, () -> minecraft.setScreen(combat())));
+		x += CARD_W + CARD_GAP;
+		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
 				Component.translatable("golemaddons.hub.visuals"), Component.translatable("golemaddons.hub.visuals.desc"),
-				new ItemStack(Items.ELYTRA), UiText.ACCENT, 2, openedAt, HubStatus::visuals, () -> minecraft.setScreen(visuals())));
+				new ItemStack(Items.ELYTRA), UiText.ACCENT, 3, openedAt, HubStatus::visuals, () -> minecraft.setScreen(visuals())));
 		x += CARD_W + CARD_GAP;
 		addRenderableWidget(new HubCard(canvas, x, CARD_Y, CARD_W, CARD_H,
 				Component.translatable("golemaddons.hub.partyfinder"), Component.translatable("golemaddons.hub.partyfinder.desc"),
-				new ItemStack(Items.DRAGON_EGG), UiText.ACCENT, 3, openedAt, HubStatus::partyFinder,
+				new ItemStack(Items.DRAGON_EGG), UiText.ACCENT, 4, openedAt, HubStatus::partyFinder,
 				() -> minecraft.setScreen(new PartyFinderScreen(this))));
 
 		addRenderableWidget(HubCard.button(canvas, (HubCanvas.WIDTH - 140) / 2f, 306f, 140f, 24f,
-				Component.translatable("gui.done"), UiText.ACCENT, 4, openedAt, this::onClose));
+				Component.translatable("gui.done"), UiText.ACCENT, 5, openedAt, this::onClose));
 
 		// Footer, right to left: "K opens this menu", the version, the refresh button, then what the updater is doing.
 		Component hint = Component.translatable("golemaddons.hub.hint", GolemAddonsClient.openMenuKeyName());
@@ -150,7 +154,17 @@ public final class GolemHubScreen extends Screen {
 				new CategoryHubScreen.Tile("golemaddons.hub.camera", new ItemStack(Items.SPYGLASS), UiText.ACCENT_2,
 						HubStatus::camera, CameraScreen::new),
 				new CategoryHubScreen.Tile("golemaddons.hub.terminals", new ItemStack(Items.LIME_STAINED_GLASS_PANE), UiText.ACCENT,
-						HubStatus::terminals, TerminalsScreen::new)));
+						HubStatus::terminals, TerminalsScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.afk", new ItemStack(Items.RED_BED), UiText.GOLD,
+						HubStatus::afk, AfkScreen::new)));
+	}
+
+	private Screen combat() {
+		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.combat"), UiText.RED, List.of(
+				new CategoryHubScreen.Tile("golemaddons.hub.riftborn", new ItemStack(Items.ENDER_EYE), UiText.ACCENT,
+						HubStatus::riftborn, RiftbornScreen::new),
+				new CategoryHubScreen.Tile("golemaddons.hub.boneswap", new ItemStack(Items.BONE), UiText.GOLD,
+						HubStatus::boneSwap, BoneSwapScreen::new)));
 	}
 
 	private Screen visuals() {

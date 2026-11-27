@@ -10,6 +10,10 @@ A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the Golem
   - **Auto Clicker**: left-clicks at a random speed between two CPS values while you hold a key.
   - **Camera**: skip the front F5 view, set the third-person distance, and let the camera pass through blocks.
   - **Terminals**: Floor 7 terminal solvers with a compact, recolourable GUI, wrong-click blocking and hover click.
+  - **AFK Helper**: a dragon tracker HUD for /afk sessions, and automatic reconnect and /afk after a disconnect or warp.
+- **Combat**
+  - **Riftborn Seraph**: anchor outlines and auto attunement during the fight.
+  - **Bone Swap**: one key throws every Bonemerang in your hotbar.
 - **Visuals**
   - **Cosmetics**: a custom name and cape that every other GolemAddons player sees, on any server, with a live preview of your player.
   - **Animations**: move, rotate, scale and re-time your first-person held item, with a live preview and shareable presets.
@@ -237,6 +241,42 @@ flicker or end up on your cursor, and a click the server never answers comes bac
 game, with the same GUI, blocking and hover click. `/gatestterms <order|panes|starts_with|colors|rubix|melody>` runs
 just one. Each click is answered after the **Test ping**, and chat shows your time and wrong clicks. Nothing is sent to
 the server.
+
+## AFK Helper
+
+**GolemAddons → QoL → AFK Helper**. Running `/afk` starts a session:
+
+- **Dragon tracker HUD**: which dragons the session has rewarded, read from the AFK Rewards menu (the dragon marked
+  "Your latest reward", counted again each time the reward timer starts over). Move and resize it with **Move / resize
+  HUD** (drag; scroll or +/- to resize; R resets).
+- **Reopen /afk**: if the AFK menu closes without you closing it (a warp, a lobby restart), `/afk` is run again after the
+  **Reopen after** delay. If that doesn't bring the menu back, the **hub command** (default `/hub`) is run first.
+- **Auto reconnect**: if the connection drops, it joins the same server again after **Reconnect after** (each failed try
+  waits twice as long, up to five minutes), then reopens `/afk`. The disconnect screen shows a countdown and a
+  **Stop the AFK helper** button.
+- The session ends when you close the AFK menu yourself (Escape, the inventory key, or clicking something in it),
+  leave the disconnect screen yourself, or run `/gaafk stop`.
+
+**Test tools** (Session & testing tab, on by default; turn them off once you trust it): **Drop connection** cuts the
+connection like a Wi-Fi drop, **Switch lobby** closes the menu and runs the hub command, **Fake reward** adds a dragon to
+the HUD. Also `/gaafk test disconnect | lobby | reward [dragon]`, `/gaafk status` and `/gaafk reset`.
+
+## Combat
+
+**Riftborn Seraph** (only while the sidebar shows "Voidgloom Seraph V" and "Slay the boss!"):
+
+- **Anchor outlines**: "It hangs itself on N anchors. Shoot every one with a bow." outlines every sea lantern within the
+  search range until it breaks. Colour, fill, line width, range and through-walls are adjustable.
+- **Auto attunement** (off by default): while you aim at something marked VOID, FLESH, ICHOR or AETHER, the matching dagger
+  goes in your hand (Fleshrend for FLESH/ICHOR, Voidfang for VOID/AETHER) and is right-clicked to switch attunement if
+  needed, never faster than the 0.3 s cooldown plus the **Extra wait**. `/gaseraph item`, `/gaseraph target` and
+  `/gaseraph status` show what it reads from your dagger, the target and the sidebar.
+
+New boss helpers go in `com.golemaddons.boss`: add the boss to `BossType`, implement `BossFeature`, list it in `Bosses`.
+
+**Bone Swap**: set a key under **Combat → Bone Swap**. Each press selects every hotbar slot holding a Bonemerang (any
+item whose name contains the text you set), right-clicks it, waits **Delay** ± **Variation**, and ends on your starting
+slot or the one you pick.
 
 ## Held item animations
 

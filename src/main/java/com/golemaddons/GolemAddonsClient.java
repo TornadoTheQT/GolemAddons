@@ -11,6 +11,7 @@ import com.golemaddons.cosmetics.CosmeticsFeature;
 import com.golemaddons.partyfinder.PartyFinderFeature;
 import com.golemaddons.render.DragonHitboxRenderer;
 import com.golemaddons.terminals.TerminalFeature;
+import com.golemaddons.afk.AfkFeature;
 import com.golemaddons.ui.GolemHubScreen;
 import com.golemaddons.update.UpdateChecker;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -72,6 +73,9 @@ public final class GolemAddonsClient implements ClientModInitializer {
 		CameraFeature.register(config);
 		AnimationFeature.register(config);
 		TerminalFeature.register(config);
+		AfkFeature.instance().register(config);
+		com.golemaddons.boss.Bosses.register(config);
+		com.golemaddons.combat.BoneSwap.instance().register(config, category);
 		PictureInPictureRendererRegistry.register(ctx -> new HeldItemPreviewRenderer(ctx.bufferSource()));
 		UpdateChecker.instance().register(config);
 

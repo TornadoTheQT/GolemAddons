@@ -27,7 +27,8 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 	/** Each top-level category card and the feature tiles inside it (tiles that open a screen). */
 	private static final String[][] CATEGORIES = {
 			{"golemaddons.hub.selling", "golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.settings"},
-			{"golemaddons.hub.qol", "golemaddons.hub.autoclicker", "golemaddons.hub.camera", "golemaddons.hub.terminals"},
+			{"golemaddons.hub.qol", "golemaddons.hub.autoclicker", "golemaddons.hub.camera", "golemaddons.hub.terminals", "golemaddons.hub.afk"},
+			{"golemaddons.hub.combat", "golemaddons.hub.riftborn", "golemaddons.hub.boneswap"},
 			{"golemaddons.hub.visuals", "golemaddons.hub.cosmetics", "golemaddons.hub.animations"}};
 
 	@Override
@@ -64,6 +65,9 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			click(context, "golemaddons.animations.tabs", 0.85); // Presets
 			context.waitTicks(10);
 			context.takeScreenshot("golemaddons-animations-presets");
+
+			riftbornAndBones(context, world);
+			afkHud(context);
 
 			// Terminals: the Look tab, then every practice terminal solved by clicking the GUI like a player.
 			context.setScreen(() -> new GolemHubScreen(null));
@@ -147,6 +151,112 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("golemaddons-pf-leading");
 			context.setScreen(() -> null);
 		}
+	}
+
+	/** A Riftborn fight set up with commands: sidebar lines, two sea lanterns, then the anchors message. */
+	private static void riftbornAndBones(ClientGameTestContext context, TestSingleplayerContext world) {
+		var server = world.getServer();
+		context.setScreen(() -> null); // an open menu pauses the singleplayer server
+		context.waitTicks(5);
+		server.runCommand("gamerule send_command_feedback false");
+		server.runCommand("scoreboard objectives add ga dummy \"DRAGSIM\"");
+		server.runCommand("scoreboard objectives setdisplay sidebar ga");
+		server.runCommand("team add t1");
+		server.runCommand("team modify t1 prefix \"Voidgloom Seraph V\"");
+		server.runCommand("team join t1 boss1");
+		server.runCommand("team add t2");
+		server.runCommand("team modify t2 prefix \"Slay the boss!\"");
+		server.runCommand("team join t2 boss2");
+		server.runCommand("scoreboard players set boss1 ga 2");
+		server.runCommand("scoreboard players set boss2 ga 1");
+		server.runCommand("execute as @p at @s run tp @s ~ ~ ~ 0 10");
+		int[] p = context.computeOnClient(mc -> new int[] {mc.player.getBlockX(), mc.player.getBlockY(), mc.player.getBlockZ()});
+		var pos1 = new net.minecraft.core.BlockPos(p[0] + 1, p[1] + 1, p[2] + 5);
+		var pos2 = new net.minecraft.core.BlockPos(p[0] - 2, p[1] + 2, p[2] + 6);
+		// The anchor search reads the client's world; set the blocks there directly.
+		context.runOnClient(mc -> {
+			mc.level.setBlock(pos1, net.minecraft.world.level.block.Blocks.SEA_LANTERN.defaultBlockState(), 3);
+			mc.level.setBlock(pos2, net.minecraft.world.level.block.Blocks.SEA_LANTERN.defaultBlockState(), 3);
+		});
+		context.waitTicks(20);
+		if (!context.computeOnClient(mc -> com.golemaddons.boss.Bosses.active(com.golemaddons.boss.BossType.RIFTBORN_SERAPH))) {
+			throw new AssertionError("Riftborn fight not recognised from the sidebar");
+		}
+		server.runCommand("tellraw @a \"It hangs itself on 2 anchors. Shoot every one with a bow.\"");
+		context.waitTicks(20);
+		int found = context.computeOnClient(mc -> com.golemaddons.boss.Bosses.anchorCount());
+		if (found != 2) {
+			String seen = context.computeOnClient(mc -> mc.level.getBlockState(pos1) + " / " + mc.level.getBlockState(pos2) + " player " + mc.player.blockPosition()
+					+ " minY " + mc.level.getMinY() + " maxY " + mc.level.getMaxY());
+			throw new AssertionError("expected 2 anchors, found " + found + ": " + seen);
+		}
+		context.takeScreenshot("golemaddons-riftborn-anchors");
+		// takeScreenshot renders its own frame outside the game loop, which skips gizmos (outlines); save a frame the
+		// game rendered itself instead.
+		context.runOnClient(mc -> net.minecraft.client.Screenshot.takeScreenshot(mc.getMainRenderTarget(), image -> {
+			try (image) {
+				image.writeToFile(mc.gameDirectory.toPath().resolve("screenshots/golemaddons-riftborn-anchors-live.png"));
+			} catch (java.io.IOException e) {
+				throw new java.io.UncheckedIOException(e);
+			}
+		}));
+		context.waitTicks(5);
+		context.runOnClient(mc -> mc.level.setBlock(pos1, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3));
+		context.waitTicks(10);
+		found = context.computeOnClient(mc -> com.golemaddons.boss.Bosses.anchorCount());
+		if (found != 1) throw new AssertionError("a broken anchor should lose its outline, still " + found);
+		server.runCommand("scoreboard objectives remove ga");
+		context.waitTicks(10);
+		if (context.computeOnClient(mc -> com.golemaddons.boss.Bosses.anchorCount()) != 0) throw new AssertionError("outlines left after the fight");
+
+		// Bone swap: three Bonemerangs, end on slot 1.
+		server.runCommand("item replace entity @p hotbar.2 with minecraft:bone[custom_name=\"Bonemerang\"]");
+		server.runCommand("item replace entity @p hotbar.4 with minecraft:bone[custom_name=\"Bonemerang\"]");
+		server.runCommand("item replace entity @p hotbar.6 with minecraft:bone[custom_name=\"Heroic Bonemerang\"]");
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.boneSwap.endSlot = 1;
+			next.boneSwap.delayMs = 40;
+			GolemAddonsClient.config().save(next);
+			mc.player.getInventory().setSelectedSlot(8);
+			var key = com.golemaddons.combat.BoneSwap.instance().key();
+			key.setKey(com.mojang.blaze3d.platform.InputConstants.getKey("key.keyboard.g"));
+			net.minecraft.client.KeyMapping.resetMapping();
+		});
+		context.waitTicks(10);
+		context.getInput().pressKey(com.golemaddons.combat.BoneSwap.instance().key());
+		int[] seen = new int[9];
+		for (int i = 0; i < 20; i++) {
+			context.waitTick();
+			int slot = context.computeOnClient(mc -> mc.player.getInventory().getSelectedSlot());
+			seen[slot]++;
+		}
+		int end = context.computeOnClient(mc -> mc.player.getInventory().getSelectedSlot());
+		if (end != 0) throw new AssertionError("bone swap should end on slot 1, ended on " + (end + 1));
+		if (seen[2] + seen[4] + seen[6] == 0) throw new AssertionError("bone swap never selected a bone");
+	}
+
+	private static void afkHud(ClientGameTestContext context) {
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.afk.hudAlways = true;
+			GolemAddonsClient.config().save(next);
+			var f = com.golemaddons.afk.AfkFeature.instance();
+			f.testReward("Old Dragon");
+			f.testReward("Old Dragon");
+			f.testReward("Superior Dragon");
+		});
+		context.waitTicks(5);
+		context.takeScreenshot("golemaddons-afk-hud");
+		setAfk(context, false);
+	}
+
+	private static void setAfk(ClientGameTestContext context, boolean always) {
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.afk.hudAlways = always;
+			GolemAddonsClient.config().save(next);
+		});
 	}
 
 	private static void setTerminals(ClientGameTestContext context, java.util.function.Consumer<GolemConfig.Terminals> change) {

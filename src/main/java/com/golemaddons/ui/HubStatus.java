@@ -78,6 +78,35 @@ final class HubStatus {
 		return new HubCard.Status(Component.translatable("golemaddons.hub.camera.status", n), UiText.GREEN);
 	}
 
+	static HubCard.Status afk() {
+		GolemConfig.Afk a = config().afk;
+		if (!a.enabled) return off();
+		com.golemaddons.afk.AfkFeature f = com.golemaddons.afk.AfkFeature.instance();
+		if (f.running()) return new HubCard.Status(Component.translatable("golemaddons.hub.afk.status.running", f.tracker().total()), UiText.GREEN);
+		return new HubCard.Status(Component.translatable("golemaddons.hub.afk.status.ready"), UiText.GRAY);
+	}
+
+	static HubCard.Status riftborn() {
+		GolemConfig.Riftborn r = config().riftborn;
+		int n = (r.anchors ? 1 : 0) + (r.autoAttunement ? 1 : 0);
+		return n == 0 ? off() : new HubCard.Status(Component.translatable("golemaddons.hub.riftborn.status", n), UiText.GREEN);
+	}
+
+	static HubCard.Status boneSwap() {
+		GolemConfig.BoneSwap b = config().boneSwap;
+		if (!b.enabled) return off();
+		var key = com.golemaddons.combat.BoneSwap.instance().key();
+		return key.isUnbound() ? new HubCard.Status(Component.translatable("golemaddons.hub.boneswap.unbound"), UiText.YELLOW)
+				: new HubCard.Status(Component.translatable("golemaddons.hub.boneswap.status", key.getTranslatedKeyMessage()), UiText.GREEN);
+	}
+
+	static HubCard.Status combat() {
+		GolemConfig c = config();
+		int on = (c.riftborn.anchors || c.riftborn.autoAttunement ? 1 : 0)
+				+ (c.boneSwap.enabled && !com.golemaddons.combat.BoneSwap.instance().key().isUnbound() ? 1 : 0);
+		return on > 0 ? countOn(on, 2) : off();
+	}
+
 	static HubCard.Status terminals() {
 		GolemConfig.Terminals t = config().terminals;
 		if (!t.enabled) return off();
@@ -88,8 +117,8 @@ final class HubStatus {
 
 	static HubCard.Status qol() {
 		boolean clicker = config().autoClicker.enabled && !GolemAddonsClient.autoClickerKey().isUnbound();
-		int on = (clicker ? 1 : 0) + (cameraOn() ? 1 : 0) + (config().terminals.enabled ? 1 : 0);
-		return on > 0 ? countOn(on, 3) : off();
+		int on = (clicker ? 1 : 0) + (cameraOn() ? 1 : 0) + (config().terminals.enabled ? 1 : 0) + (config().afk.enabled ? 1 : 0);
+		return on > 0 ? countOn(on, 4) : off();
 	}
 
 	private static boolean cosmeticsOn() {

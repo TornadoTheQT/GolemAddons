@@ -15,5 +15,6 @@ abstract class DebugRendererMixin {
 	private void golemaddons$emitDragonHitboxes(Frustum frustum, double camX, double camY, double camZ, float partialTick,
 			CallbackInfo ci) {
 		DragonHitboxRenderer.emit(frustum, partialTick);
+		com.golemaddons.boss.Bosses.emitGizmos(frustum, partialTick);
 	}
 }

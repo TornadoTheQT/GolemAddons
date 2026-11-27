@@ -29,6 +29,153 @@ public final class GolemConfig {
 	public Animations animations = new Animations();
 	public Updates updates = new Updates();
 	public Terminals terminals = new Terminals();
+	public Afk afk = new Afk();
+	public Riftborn riftborn = new Riftborn();
+	public BoneSwap boneSwap = new BoneSwap();
+
+	/** Where a movable HUD sits (fractions of the screen, so it survives resizes) and how big it is. */
+	public static final class HudPosition {
+		public static final float MIN_SCALE = 0.5f;
+		public static final float MAX_SCALE = 3f;
+
+		public float x;
+		public float y;
+		public float scale = 1f;
+
+		public HudPosition() {
+		}
+
+		public HudPosition(float x, float y, float scale) {
+			this.x = x;
+			this.y = y;
+			this.scale = scale;
+		}
+
+		public HudPosition copy() {
+			return new HudPosition(x, y, scale);
+		}
+
+		void sanitize() {
+			x = Float.isFinite(x) ? Math.clamp(x, 0f, 1f) : 0f;
+			y = Float.isFinite(y) ? Math.clamp(y, 0f, 1f) : 0f;
+			scale = Float.isFinite(scale) ? Math.clamp(scale, MIN_SCALE, MAX_SCALE) : 1f;
+		}
+	}
+
+	/** AFK helper: dragon tracker HUD for /afk sessions, and getting back to /afk after a disconnect or warp. */
+	public static final class Afk {
+		public static final int MAX_DELAY_S = 300;
+
+		public boolean enabled = true;
+		/** Reconnect to the server after being disconnected during a session. */
+		public boolean autoReconnect = true;
+		/** Run /afk again when the AFK menu closes without you closing it (a warp, a lobby switch, a restart). */
+		public boolean autoReopen = true;
+		/** Seconds before the first reconnect attempt; later attempts wait longer, up to five minutes. */
+		public int reconnectDelayS = 10;
+		/** Seconds before running /afk again after the menu closed or after joining. */
+		public int reopenDelayS = 5;
+		/** Run before /afk when /afk doesn't open the menu (for when you were sent somewhere it doesn't work). */
+		public String hubCommand = "hub";
+		public boolean showHud = true;
+		/** Show the tracker even with no session running. */
+		public boolean hudAlways = false;
+		public HudPosition hud = new HudPosition(0.01f, 0.3f, 1f);
+		/** /gaafk test ... commands and the test buttons. Turn off once you trust it. */
+		public boolean testTools = true;
+
+		public Afk copy() {
+			Afk c = new Afk();
+			c.enabled = enabled;
+			c.autoReconnect = autoReconnect;
+			c.autoReopen = autoReopen;
+			c.reconnectDelayS = reconnectDelayS;
+			c.reopenDelayS = reopenDelayS;
+			c.hubCommand = hubCommand;
+			c.showHud = showHud;
+			c.hudAlways = hudAlways;
+			c.hud = hud.copy();
+			c.testTools = testTools;
+			return c;
+		}
+
+		void sanitize() {
+			if (hud == null) hud = new HudPosition(0.01f, 0.3f, 1f);
+			hud.sanitize();
+			reconnectDelayS = Math.clamp(reconnectDelayS, 2, MAX_DELAY_S);
+			reopenDelayS = Math.clamp(reopenDelayS, 1, 60);
+			hubCommand = com.golemaddons.autosell.QuickSellCommand.normalize(hubCommand == null ? "" : hubCommand);
+		}
+	}
+
+	/** Riftborn Seraph (scoreboard: Voidgloom Seraph V) helpers. */
+	public static final class Riftborn {
+		public static final int MAX_RADIUS = 64;
+
+		public boolean anchors = true;
+		/** Outline colour (ARGB) and the faint fill inside it. */
+		public int anchorColor = 0xFFFF4FD8;
+		public int anchorFill = 0x40FF4FD8;
+		public float anchorLineWidth = 3f;
+		public boolean anchorsThroughWalls = true;
+		public int anchorRadius = 32;
+		public boolean autoAttunement = false;
+		/** Added to the 0.3 s swap cooldown, to allow for ping. */
+		public int attunementMarginMs = 60;
+		/** Also switch to the dagger the target needs. */
+		public boolean switchDagger = true;
+
+		public Riftborn copy() {
+			Riftborn c = new Riftborn();
+			c.anchors = anchors;
+			c.anchorColor = anchorColor;
+			c.anchorFill = anchorFill;
+			c.anchorLineWidth = anchorLineWidth;
+			c.anchorsThroughWalls = anchorsThroughWalls;
+			c.anchorRadius = anchorRadius;
+			c.autoAttunement = autoAttunement;
+			c.attunementMarginMs = attunementMarginMs;
+			c.switchDagger = switchDagger;
+			return c;
+		}
+
+		void sanitize() {
+			anchorRadius = Math.clamp(anchorRadius, 4, MAX_RADIUS);
+			anchorLineWidth = Float.isFinite(anchorLineWidth) ? Math.clamp(anchorLineWidth, 1f, 10f) : 3f;
+			attunementMarginMs = Math.clamp(attunementMarginMs, 0, 500);
+		}
+	}
+
+	/** Bone swap: one key throws every Bonemerang in the hotbar, one after another. */
+	public static final class BoneSwap {
+		public boolean enabled = true;
+		/** Items whose name contains this are thrown. */
+		public String itemName = "Bonemerang";
+		/** Time between two throws. */
+		public int delayMs = 60;
+		/** Each delay is changed by up to this much either way, at random. */
+		public int variationMs = 20;
+		/** 0: back to the slot you were on; 1-9: that hotbar slot. */
+		public int endSlot = 0;
+
+		public BoneSwap copy() {
+			BoneSwap c = new BoneSwap();
+			c.enabled = enabled;
+			c.itemName = itemName;
+			c.delayMs = delayMs;
+			c.variationMs = variationMs;
+			c.endSlot = endSlot;
+			return c;
+		}
+
+		void sanitize() {
+			if (itemName == null || itemName.isBlank()) itemName = "Bonemerang";
+			if (itemName.length() > 48) itemName = itemName.substring(0, 48);
+			delayMs = Math.clamp(delayMs, 0, 1000);
+			variationMs = Math.clamp(variationMs, 0, 500);
+			endSlot = Math.clamp(endSlot, 0, 9);
+		}
+	}
 
 	/** Floor 7 terminal solvers: the compact GUI, its look, and hover click. */
 	public static final class Terminals {
@@ -512,6 +659,9 @@ public final class GolemConfig {
 		c.animations = animations.copy();
 		c.updates = updates.copy();
 		c.terminals = terminals.copy();
+		c.afk = afk.copy();
+		c.riftborn = riftborn.copy();
+		c.boneSwap = boneSwap.copy();
 		return c;
 	}
 
@@ -527,6 +677,12 @@ public final class GolemConfig {
 		if (animations == null) animations = new Animations();
 		if (updates == null) updates = new Updates();
 		if (terminals == null) terminals = new Terminals();
+		if (afk == null) afk = new Afk();
+		if (riftborn == null) riftborn = new Riftborn();
+		if (boneSwap == null) boneSwap = new BoneSwap();
+		afk.sanitize();
+		riftborn.sanitize();
+		boneSwap.sanitize();
 		terminals.sanitize();
 		camera.sanitize();
 		animations.sanitize();
