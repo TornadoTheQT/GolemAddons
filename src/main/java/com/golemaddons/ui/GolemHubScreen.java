@@ -1,7 +1,6 @@
 package com.golemaddons.ui;
 
 import com.golemaddons.GolemAddonsClient;
-import com.golemaddons.config.GolemConfig;
 import com.golemaddons.update.Release;
 import com.golemaddons.update.UpdateChecker;
 import java.util.List;
@@ -86,9 +85,14 @@ public final class GolemHubScreen extends Screen {
 		hintX = HubCanvas.WIDTH - 12 - font.width(hint);
 		versionX = hintX - 10 - (font.width(versionText()) + 8);
 		iconX = versionX - 6 - ICON;
-		UpdateIcon icon = new UpdateIcon(canvas, iconX, FOOTER_Y - 3, ICON, () -> minecraft.setScreen(new UpdatesScreen(this)));
+		UpdateIcon icon = new UpdateIcon(canvas, iconX, FOOTER_Y - 3, ICON);
 		icon.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("golemaddons.hub.update.tooltip")));
 		addRenderableWidget(icon);
+		// The version pill opens the update settings and changelog.
+		VersionPill pill = new VersionPill(canvas, versionX, FOOTER_Y - 3, font.width(versionText()) + 8, 13, versionText(),
+				() -> minecraft.setScreen(new UpdatesScreen(this)));
+		pill.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("golemaddons.hub.version.tooltip")));
+		addRenderableWidget(pill);
 	}
 
 	private Component versionText() {
@@ -138,53 +142,47 @@ public final class GolemHubScreen extends Screen {
 	}
 
 	private Screen selling() {
-		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.selling"), UiText.GOLD, List.of(
-				new CategoryHubScreen.Tile("golemaddons.hub.mining", new ItemStack(Items.DIAMOND_PICKAXE), UiText.ACCENT_2,
+		return new SectionScreen(this, "selling", Component.translatable("golemaddons.hub.selling"), UiText.GOLD, List.of(
+				new SectionScreen.Tile("golemaddons.hub.mining", new ItemStack(Items.DIAMOND_PICKAXE), UiText.ACCENT_2,
 						HubStatus::mining, MiningAutoSellScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.dragon", new ItemStack(Items.DRAGON_HEAD), UiText.ACCENT,
+				new SectionScreen.Tile("golemaddons.hub.dragon", new ItemStack(Items.DRAGON_HEAD), UiText.ACCENT,
 						HubStatus::dragon, DragonSellerScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.settings", new ItemStack(Items.COMPARATOR), UiText.GOLD,
+				new SectionScreen.Tile("golemaddons.hub.settings", new ItemStack(Items.COMPARATOR), UiText.GOLD,
 						HubStatus::sellSettings, SellSettingsScreen::new)));
 	}
 
 	private Screen qol() {
-		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.qol"), UiText.ACCENT_2, List.of(
-				new CategoryHubScreen.Tile("golemaddons.hub.autoclicker", new ItemStack(Items.GOLDEN_SWORD), UiText.GOLD,
+		return new SectionScreen(this, "qol", Component.translatable("golemaddons.hub.qol"), UiText.ACCENT_2, List.of(
+				new SectionScreen.Tile("golemaddons.hub.autoclicker", new ItemStack(Items.GOLDEN_SWORD), UiText.GOLD,
 						HubStatus::autoClicker, AutoClickerScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.camera", new ItemStack(Items.SPYGLASS), UiText.ACCENT_2,
+				new SectionScreen.Tile("golemaddons.hub.camera", new ItemStack(Items.SPYGLASS), UiText.ACCENT_2,
 						HubStatus::camera, CameraScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.terminals", new ItemStack(Items.LIME_STAINED_GLASS_PANE), UiText.ACCENT,
+				new SectionScreen.Tile("golemaddons.hub.terminals", new ItemStack(Items.LIME_STAINED_GLASS_PANE), UiText.ACCENT,
 						HubStatus::terminals, TerminalsScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.afk", new ItemStack(Items.RED_BED), UiText.GOLD,
+				new SectionScreen.Tile("golemaddons.hub.afk", new ItemStack(Items.RED_BED), UiText.GOLD,
 						HubStatus::afk, AfkScreen::new)));
 	}
 
 	private Screen combat() {
-		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.combat"), UiText.RED, List.of(
-				new CategoryHubScreen.Tile("golemaddons.hub.riftborn", new ItemStack(Items.ENDER_EYE), UiText.ACCENT,
+		return new SectionScreen(this, "combat", Component.translatable("golemaddons.hub.combat"), UiText.RED, List.of(
+				new SectionScreen.Tile("golemaddons.hub.riftborn", new ItemStack(Items.ENDER_EYE), UiText.ACCENT,
 						HubStatus::riftborn, RiftbornScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.boneswap", new ItemStack(Items.BONE), UiText.GOLD,
-						HubStatus::boneSwap, BoneSwapScreen::new)));
+				new SectionScreen.Tile("golemaddons.hub.boneswap", new ItemStack(Items.BONE), UiText.GOLD,
+						HubStatus::boneSwap, BoneSwapScreen::new),
+				new SectionScreen.Tile("golemaddons.hub.chatcleaner", new ItemStack(Items.WRITABLE_BOOK), UiText.ACCENT_2,
+						HubStatus::chatCleaner, ChatCleanerScreen::new)));
 	}
 
 	private Screen visuals() {
-		return new CategoryHubScreen(this, Component.translatable("golemaddons.hub.visuals"), UiText.ACCENT, List.of(
-				new CategoryHubScreen.Tile("golemaddons.hub.cosmetics", new ItemStack(Items.ELYTRA), UiText.ACCENT_2,
+		return new SectionScreen(this, "visuals", Component.translatable("golemaddons.hub.visuals"), UiText.ACCENT, List.of(
+				new SectionScreen.Tile("golemaddons.hub.scoreboard", new ItemStack(Items.PAINTING), UiText.ACCENT_2,
+						HubStatus::scoreboard, ScoreboardScreen::new),
+				new SectionScreen.Tile("golemaddons.hub.cosmetics", new ItemStack(Items.ELYTRA), UiText.ACCENT_2,
 						HubStatus::cosmetics, CosmeticsScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.animations", new ItemStack(Items.DIAMOND_SWORD), UiText.ACCENT,
+				new SectionScreen.Tile("golemaddons.hub.animations", new ItemStack(Items.DIAMOND_SWORD), UiText.ACCENT,
 						HubStatus::animations, AnimationsScreen::new),
-				new CategoryHubScreen.Tile("golemaddons.hub.hitboxes", new ItemStack(Items.END_CRYSTAL), UiText.GOLD,
-						HubStatus::hitboxes, parent -> {
-							toggleHitboxes();
-							return null;
-						})));
-	}
-
-	/** The hitbox tile is a toggle: saved right away, like the hitbox key. */
-	private static void toggleHitboxes() {
-		GolemConfig next = GolemAddonsClient.config().get().copy();
-		next.render.dragonHitboxes = !next.render.dragonHitboxes;
-		GolemAddonsClient.config().save(next);
+				new SectionScreen.Tile("golemaddons.hub.world", new ItemStack(Items.END_CRYSTAL), UiText.GOLD,
+						HubStatus::world, WorldScreen::new)));
 	}
 
 	@Override
@@ -254,13 +252,6 @@ public final class GolemHubScreen extends Screen {
 		Component hint = Component.translatable("golemaddons.hub.hint", GolemAddonsClient.openMenuKeyName());
 		int fy = Math.round(FOOTER_Y);
 		graphics.text(font, hint, Math.round(hintX), fy, UiText.DARK_GRAY);
-		// Version pill.
-		Component versionText = versionText();
-		int vx = Math.round(versionX);
-		int vw = font.width(versionText) + 8;
-		graphics.fill(vx, fy - 3, vx + vw, fy + 10, 0x90141220);
-		graphics.outline(vx, fy - 3, vw, 13, UiText.withAlpha(UiText.ACCENT, 0.6f));
-		graphics.text(font, versionText, vx + 4, fy, UiText.GRAY);
 		// Updater status, left of the refresh button.
 		Component status = updateStatus();
 		float alpha = updateStatusAlpha(status);

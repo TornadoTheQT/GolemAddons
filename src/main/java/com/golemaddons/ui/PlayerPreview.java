@@ -28,6 +28,11 @@ final class PlayerPreview {
 
 	/** Draws into the box; {@code nameTag} is shown above the model. Does nothing useful outside a world. */
 	static void extract(GuiGraphicsExtractor graphics, Minecraft mc, int x0, int y0, int x1, int y1, Component nameTag) {
+		extract(graphics, mc, x0, y0, x1, y1, nameTag, 0, 0);
+	}
+
+	/** {@code offX}/{@code offY}: where the caller's (0, 0) is on screen (the 3D model is placed in screen coordinates). */
+	static void extract(GuiGraphicsExtractor graphics, Minecraft mc, int x0, int y0, int x1, int y1, Component nameTag, int offX, int offY) {
 		Font font = mc.font;
 		LocalPlayer player = mc.player;
 		int cx = (x0 + x1) / 2;
@@ -55,7 +60,7 @@ final class PlayerPreview {
 		Quaternionf camera = new Quaternionf().rotateX(-8f * Mth.DEG_TO_RAD);
 		pose.mul(camera);
 		Vector3f translation = new Vector3f(0f, avatar.boundingBoxHeight / 2f + 0.05f, 0f);
-		graphics.entity(avatar, size, translation, pose, camera, x0, modelTop, x1, y1);
+		graphics.entity(avatar, size, translation, pose, camera, x0 + offX, modelTop + offY, x1 + offX, y1 + offY);
 	}
 
 	/** Standing, walking in place and turning, cape swaying; not affected by what the player is doing in game. */

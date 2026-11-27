@@ -32,6 +32,8 @@ public final class GolemConfig {
 	public Afk afk = new Afk();
 	public Riftborn riftborn = new Riftborn();
 	public BoneSwap boneSwap = new BoneSwap();
+	public ChatCleaner chatCleaner = new ChatCleaner();
+	public Scoreboard scoreboard = new Scoreboard();
 
 	/** Where a movable HUD sits (fractions of the screen, so it survives resizes) and how big it is. */
 	public static final class HudPosition {
@@ -146,6 +148,195 @@ public final class GolemConfig {
 			anchorRadius = Math.clamp(anchorRadius, 4, MAX_RADIUS);
 			anchorLineWidth = Float.isFinite(anchorLineWidth) ? Math.clamp(anchorLineWidth, 1f, 10f) : 3f;
 			attunementMarginMs = Math.clamp(attunementMarginMs, 0, 500);
+		}
+	}
+
+	/** Slayer chat cleaner: hides the boss messages that repeat every fight. Each group can be kept. */
+	public static final class ChatCleaner {
+		public boolean enabled = true;
+		public boolean hitshield = true;
+		public boolean mechanics = true;
+		public boolean split = true;
+		public boolean anchors = true;
+		public boolean soulcry = true;
+		/** Extra text to hide, "|"-separated: any chat line containing one of them is hidden. */
+		public String customFilters = "";
+
+		public boolean hides(com.golemaddons.chat.SlayerChatFilter.Category c) {
+			return switch (c) {
+				case HITSHIELD -> hitshield;
+				case MECHANICS -> mechanics;
+				case SPLIT -> split;
+				case ANCHORS -> anchors;
+				case SOULCRY -> soulcry;
+			};
+		}
+
+		public ChatCleaner copy() {
+			ChatCleaner c = new ChatCleaner();
+			c.enabled = enabled;
+			c.hitshield = hitshield;
+			c.mechanics = mechanics;
+			c.split = split;
+			c.anchors = anchors;
+			c.soulcry = soulcry;
+			c.customFilters = customFilters;
+			return c;
+		}
+
+		void sanitize() {
+			if (customFilters == null) customFilters = "";
+			if (customFilters.length() > 512) customFilters = customFilters.substring(0, 512);
+		}
+	}
+
+	/** Custom scoreboard: the server's sidebar redrawn with chosen lines, order, background theme and text. */
+	public static final class Scoreboard {
+		public static final int MAX_ELEMENTS = 40;
+		public static final int MAX_TEXT = 96;
+
+		public boolean enabled = false;
+		/** Hide the server's own sidebar while the custom one shows. */
+		public boolean hideVanilla = true;
+		public List<Element> elements = com.golemaddons.scoreboard.ScoreboardElement.defaults();
+		/** "&" colour codes and "&#RRGGBB". Empty: the server's title. */
+		public String header = "&d&lDragSim";
+		/** Empty: no footer line. */
+		public String footer = "&7dragsim.co";
+		/** LEFT, CENTER or RIGHT, for the lines (header and footer are centred). */
+		public String align = "LEFT";
+		public boolean textShadow = true;
+		public int padding = 5;
+		public int lineSpacing = 1;
+		public String theme = "AURORA";
+		/** Colours per theme, so switching back and forth keeps each one's edits. */
+		public Map<String, ThemeColors> themeColors = new LinkedHashMap<>();
+		/** Background opacity, 0-100. */
+		public int opacity = 85;
+		/** Darkens the background behind the text, 0-80, for legibility over bright themes. */
+		public int textBacking = 20;
+		public boolean particles = true;
+		/** Particle amount, 0-200 (% of the theme's normal). */
+		public int particleDensity = 100;
+		/** Animation speed, 0-300 (%). 0 freezes it. */
+		public int animationSpeed = 100;
+		public int cornerRadius = 5;
+		public int borderWidth = 1;
+		/** NONE, SOLID or THEME (animated along the theme's colours). */
+		public String borderStyle = "THEME";
+		public int borderColor = 0xFF9D7BFF;
+		public HudPosition hud = new HudPosition(1f, 0.42f, 1f);
+
+		/** One line (or group of lines) of the board. */
+		public static final class Element {
+			public String type;
+			public boolean enabled = true;
+			/** Text of a CUSTOM line. */
+			public String text = "";
+
+			public Element() {
+			}
+
+			public Element(String type, boolean enabled, String text) {
+				this.type = type;
+				this.enabled = enabled;
+				this.text = text;
+			}
+
+			public Element copy() {
+				return new Element(type, enabled, text);
+			}
+		}
+
+		/** A theme's colours (ARGB): two or three background colours and the particle colour. */
+		public static final class ThemeColors {
+			public int primary;
+			public int secondary;
+			public int accent;
+			public int particle;
+
+			public ThemeColors() {
+			}
+
+			public ThemeColors(int primary, int secondary, int accent, int particle) {
+				this.primary = primary;
+				this.secondary = secondary;
+				this.accent = accent;
+				this.particle = particle;
+			}
+
+			public ThemeColors copy() {
+				return new ThemeColors(primary, secondary, accent, particle);
+			}
+		}
+
+		/** The colours being used for the current theme (its defaults until edited). */
+		public ThemeColors colors() {
+			com.golemaddons.scoreboard.ScoreboardTheme t = com.golemaddons.scoreboard.ScoreboardTheme.of(theme);
+			return themeColors.computeIfAbsent(t.name(), k -> t.defaults());
+		}
+
+		public Scoreboard copy() {
+			Scoreboard c = new Scoreboard();
+			c.enabled = enabled;
+			c.hideVanilla = hideVanilla;
+			c.elements = new ArrayList<>();
+			for (Element e : elements) c.elements.add(e.copy());
+			c.header = header;
+			c.footer = footer;
+			c.align = align;
+			c.textShadow = textShadow;
+			c.padding = padding;
+			c.lineSpacing = lineSpacing;
+			c.theme = theme;
+			c.themeColors = new LinkedHashMap<>();
+			themeColors.forEach((k, v) -> c.themeColors.put(k, v.copy()));
+			c.opacity = opacity;
+			c.textBacking = textBacking;
+			c.particles = particles;
+			c.particleDensity = particleDensity;
+			c.animationSpeed = animationSpeed;
+			c.cornerRadius = cornerRadius;
+			c.borderWidth = borderWidth;
+			c.borderStyle = borderStyle;
+			c.borderColor = borderColor;
+			c.hud = hud.copy();
+			return c;
+		}
+
+		void sanitize() {
+			if (elements == null) elements = com.golemaddons.scoreboard.ScoreboardElement.defaults();
+			elements.removeIf(e -> e == null || com.golemaddons.scoreboard.ScoreboardElement.of(e.type) == null);
+			for (Element e : elements) {
+				if (e.text == null) e.text = "";
+				if (e.text.length() > MAX_TEXT) e.text = e.text.substring(0, MAX_TEXT);
+			}
+			while (elements.size() > MAX_ELEMENTS) elements.remove(elements.size() - 1);
+			// Every server element is in the list exactly once (custom and blank lines can repeat).
+			java.util.Set<String> seen = new java.util.HashSet<>();
+			elements.removeIf(e -> !com.golemaddons.scoreboard.ScoreboardElement.of(e.type).repeatable && !seen.add(e.type));
+			for (com.golemaddons.scoreboard.ScoreboardElement t : com.golemaddons.scoreboard.ScoreboardElement.values()) {
+				if (!t.repeatable && !seen.contains(t.name())) elements.add(new Element(t.name(), false, ""));
+			}
+			if (header == null) header = "";
+			if (footer == null) footer = "";
+			if (header.length() > MAX_TEXT) header = header.substring(0, MAX_TEXT);
+			if (footer.length() > MAX_TEXT) footer = footer.substring(0, MAX_TEXT);
+			if (!java.util.Set.of("LEFT", "CENTER", "RIGHT").contains(align)) align = "LEFT";
+			if (!java.util.Set.of("NONE", "SOLID", "THEME").contains(borderStyle)) borderStyle = "THEME";
+			theme = com.golemaddons.scoreboard.ScoreboardTheme.of(theme).name();
+			if (themeColors == null) themeColors = new LinkedHashMap<>();
+			themeColors.entrySet().removeIf(e -> e.getKey() == null || e.getValue() == null);
+			padding = Math.clamp(padding, 1, 12);
+			lineSpacing = Math.clamp(lineSpacing, 0, 6);
+			opacity = Math.clamp(opacity, 0, 100);
+			textBacking = Math.clamp(textBacking, 0, 80);
+			particleDensity = Math.clamp(particleDensity, 0, 200);
+			animationSpeed = Math.clamp(animationSpeed, 0, 300);
+			cornerRadius = Math.clamp(cornerRadius, 0, 12);
+			borderWidth = Math.clamp(borderWidth, 0, 3);
+			if (hud == null) hud = new HudPosition(1f, 0.42f, 1f);
+			hud.sanitize();
 		}
 	}
 
@@ -506,10 +697,34 @@ public final class GolemConfig {
 	public static final class Render {
 		/** Outline ender dragons' hit parts. Off by default. */
 		public boolean dragonHitboxes = false;
+		/** Removes the thick purple haze in the Rift (boss-bar world fog and the dimension's fog). */
+		public boolean clearRiftHaze = false;
+		/** With the haze cleared, also use an overworld-style blue sky and fog colour instead of the End's. */
+		public boolean riftNormalSky = true;
+		/** Clear the haze everywhere, not only while in the Rift. */
+		public boolean clearHazeEverywhere = false;
+		/** Hide debuff screen effects (client only; the effects still apply). Each kind can be kept. */
+		public boolean disableDebuffs = false;
+		public boolean noBlindness = true;
+		public boolean noDarkness = true;
+		public boolean noNausea = true;
+		public boolean noPumpkin = true;
+		public boolean noFreezing = true;
+		public boolean noFireOverlay = false;
 
-		Render copy() {
+		public Render copy() {
 			Render c = new Render();
 			c.dragonHitboxes = dragonHitboxes;
+			c.clearRiftHaze = clearRiftHaze;
+			c.riftNormalSky = riftNormalSky;
+			c.clearHazeEverywhere = clearHazeEverywhere;
+			c.disableDebuffs = disableDebuffs;
+			c.noBlindness = noBlindness;
+			c.noDarkness = noDarkness;
+			c.noNausea = noNausea;
+			c.noPumpkin = noPumpkin;
+			c.noFreezing = noFreezing;
+			c.noFireOverlay = noFireOverlay;
 			return c;
 		}
 	}
@@ -665,6 +880,8 @@ public final class GolemConfig {
 		c.afk = afk.copy();
 		c.riftborn = riftborn.copy();
 		c.boneSwap = boneSwap.copy();
+		c.chatCleaner = chatCleaner.copy();
+		c.scoreboard = scoreboard.copy();
 		return c;
 	}
 
@@ -683,6 +900,10 @@ public final class GolemConfig {
 		if (afk == null) afk = new Afk();
 		if (riftborn == null) riftborn = new Riftborn();
 		if (boneSwap == null) boneSwap = new BoneSwap();
+		if (chatCleaner == null) chatCleaner = new ChatCleaner();
+		if (scoreboard == null) scoreboard = new Scoreboard();
+		chatCleaner.sanitize();
+		scoreboard.sanitize();
 		afk.sanitize();
 		riftborn.sanitize();
 		boneSwap.sanitize();

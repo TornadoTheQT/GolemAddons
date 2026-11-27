@@ -18,7 +18,13 @@ public final class Sidebar {
 		List<String> out = new ArrayList<>();
 		if (mc.level == null) return out;
 		Scoreboard scoreboard = mc.level.getScoreboard();
-		Objective objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+		Objective objective;
+		com.golemaddons.scoreboard.ScoreboardFeature.beginRead();
+		try {
+			objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
+		} finally {
+			com.golemaddons.scoreboard.ScoreboardFeature.endRead();
+		}
 		if (objective == null) return out;
 		out.add(clean(objective.getDisplayName().getString()));
 		for (PlayerScoreEntry score : scoreboard.listPlayerScores(objective)) {
@@ -30,7 +36,7 @@ public final class Sidebar {
 	}
 
 	/** Drops formatting codes and the invisible characters servers pad lines with. */
-	static String clean(String s) {
+	public static String clean(String s) {
 		StringBuilder b = new StringBuilder(s.length());
 		for (int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);

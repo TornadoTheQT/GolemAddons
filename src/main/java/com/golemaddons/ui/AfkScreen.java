@@ -104,7 +104,7 @@ final class AfkScreen extends EditorScreen {
 
 	private void editHud() {
 		AfkFeature f = AfkFeature.instance();
-		minecraft.setScreen(new HudEditScreen(this, Component.translatable("golemaddons.afk.edit_hud"), working.afk.hud,
+		minecraft.setScreen(new HudEditScreen(self(), Component.translatable("golemaddons.afk.edit_hud"), working.afk.hud,
 				new GolemConfig.Afk().hud, font -> AfkHud.size(font, sample()), (g, x, y, scale) -> AfkHud.draw(g, font, x, y, scale, sample())));
 	}
 

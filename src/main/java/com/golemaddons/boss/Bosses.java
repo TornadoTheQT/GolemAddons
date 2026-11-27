@@ -33,15 +33,19 @@ public final class Bosses {
 						.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("item").executes(c -> debugItem()))
 						.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("target").executes(c -> debugTarget()))
 						.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("status").executes(c -> debugStatus()))));
-		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-			if (active.isEmpty()) return;
-			String line = Sidebar.clean(message.getString());
-			for (BossFeature f : FEATURES) {
-				if (!active.contains(f.boss())) continue;
-				if (overlay) f.onActionBar(line, config);
-				else f.onChat(line, config);
-			}
-		});
+		ClientReceiveMessageEvents.GAME.register(Bosses::onMessage);
+		// The chat cleaner may hide boss messages; the helpers still need them.
+		ClientReceiveMessageEvents.GAME_CANCELED.register(Bosses::onMessage);
+	}
+
+	private static void onMessage(net.minecraft.network.chat.Component message, boolean overlay) {
+		if (active.isEmpty()) return;
+		String line = Sidebar.clean(message.getString());
+		for (BossFeature f : FEATURES) {
+			if (!active.contains(f.boss())) continue;
+			if (overlay) f.onActionBar(line, config);
+			else f.onChat(line, config);
+		}
 	}
 
 	/** Anchors outlined right now (for the in-game test). */

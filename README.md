@@ -1,6 +1,6 @@
 # GolemAddons
 
-A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the GolemAddons menu. It has four cards; the first three open a page with that category's features:
+A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the GolemAddons menu. It has five cards. Selling, QoL, Combat and Visuals open a section: its pages are listed down the left, so you can switch between them in one click, and the page on the right scrolls smoothly when it is taller than your window. Every page in a section edits the same settings, saved when you leave the section (or with **Save**); **Undo changes** puts them back.
 
 - **Selling**
   - **Mining Auto-Sell**: sells items matching your own regex rules, e.g. Enchanted Obsidian.
@@ -14,13 +14,15 @@ A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the Golem
 - **Combat**
   - **Riftborn Seraph**: anchor outlines and auto attunement during the fight.
   - **Bone Swap**: one key throws every Bonemerang in your hotbar.
+  - **Chat Cleaner**: hides the slayer messages that repeat every fight (hitshields, mechanics, splits, anchors, Soulcry), group by group, plus your own filters.
 - **Visuals**
+  - **Scoreboard**: your own version of the server's sidebar. Pick and drag the lines into any order, add your own text (colour codes and placeholders), and choose an animated theme.
   - **Cosmetics**: a custom name and cape that every other GolemAddons player sees, on any server, with a live preview of your player.
   - **Animations**: move, rotate, scale and re-time your first-person held item, with a live preview and shareable presets.
-  - **Dragon Hitboxes**: click the tile to turn dragon hit-part outlines on or off.
+  - **World**: hide debuff screen effects, clear the Rift's purple haze, and dragon hit-part outlines.
 - **Party Finder**: list and join GDrag and NDrag parties with other GolemAddons players on the same server, live. Also `/gapf`.
 
-The bottom-right of the menu shows the version and a refresh button: click it to check for updates (or to install one that is ready), right-click it for update settings. A short note next to it says what happened.
+The bottom-right of the menu shows the version and a refresh button. Click the refresh button to check for updates (or to install one that is ready); click the version to open the update settings and changelog. A short note next to them says what happened.
 
 The menu is drawn on a fixed 640×360 layout scaled to your window, so it fills the screen the same way at any GUI scale.
 
@@ -120,7 +122,7 @@ Item names are matched **exactly**, e.g. `Young Dragon Helmet` or `Aspect of the
 
 ### Dragon hitboxes
 
-Click the **Dragon Hitboxes** tile under **Visuals** (it saves straight away), or bind **Toggle dragon hitboxes** under Controls → GolemAddons (unbound by default; the key saves the setting straight away). Off by default.
+Turn it on under **Visuals → World**, or bind **Toggle dragon hitboxes** under Controls → GolemAddons (unbound by default; the key saves the setting straight away). Off by default.
 
 - Only ender dragons get outlines, one box per hit part (head, neck, body, wings, tail). The check is the entity type, not its name, so no other mob or player is ever outlined.
 - The part under your crosshair is red and the rest of that dragon is gold. Other dragons are teal.
@@ -263,7 +265,7 @@ the HUD. Also `/gaafk test disconnect | lobby | reward [dragon]`, `/gaafk status
 
 ## Combat
 
-**Riftborn Seraph** (only while the sidebar shows "Voidgloom Seraph V" and "Slay the boss!"):
+**Riftborn Seraph** (only while the sidebar shows "Riftborn Seraph" and "Slay the boss!"):
 
 - **Anchor outlines**: "It hangs itself on N anchors. Shoot every one with a bow." outlines every sea lantern within the
   search range until it breaks. Colour, fill, line width, range and through-walls are adjustable.
@@ -274,9 +276,46 @@ the HUD. Also `/gaafk test disconnect | lobby | reward [dragon]`, `/gaafk status
 
 New boss helpers go in `com.golemaddons.boss`: add the boss to `BossType`, implement `BossFeature`, list it in `Bosses`.
 
+**Chat Cleaner** (**Combat → Chat Cleaner**, on by default): hides these from chat, each group separately:
+hitshield ("The Riftborn Seraph has spawned!", "Malevolent Hitshield!", "The hitshield shatters!"), mechanics ("BROKEN HEART
+RADIATION!", "NUKEKUBI FIXATION!", "It pulls itself back together."), the split and its "- ✦ AETHER • Voidfang Dagger"
+lines, the anchor messages, and Soulcry. **Extra filters** hides any line containing one of your `|`-separated texts.
+Only chat is cleaned, and the boss helpers still see hidden messages.
+
 **Bone Swap**: set a key under **Combat → Bone Swap**. Each press selects every hotbar slot holding a Bonemerang (any
 item whose name contains the text you set), right-clicks it, waits **Delay** ± **Variation**, and ends on your starting
 slot or the one you pick.
+
+## Custom scoreboard
+
+**Visuals → Scoreboard** redraws the server's sidebar your way (off until you turn it on):
+
+- **Lines**: every line the server shows (Name, Purse, Gems, Carrot Buff, Pet, Booster, Location, Activity for quests,
+  slayer and events, and the website line) is a row you can drag into any order (or Shift + ↑/↓) and tick on or off.
+  **+ Text** adds your own line with `&` colour codes (`&d`, `&l`, `&#FF55FF`) and `{time}` `{date}` `{fps}` `{ping}`
+  `{x}` `{y}` `{z}` `{players}`; **+ Blank** adds a gap. Lines the server isn't showing are skipped, and gaps never pile up.
+- **Background**: Solid, Gradient, Aurora lights, Matrix, Fire or Ocean, each animated with its own particles. Every
+  theme's colours, the opacity, animation speed, particle amount, corner radius and border are adjustable. **Text
+  contrast** darkens the background behind the text so it stays readable.
+- **Text**: an editable header and footer (colour codes too), line alignment, shadow, padding, spacing and size.
+  **Move & resize** places it anywhere.
+
+**Hide server's** hides the server's sidebar from every renderer, including a client's own scoreboard module (such
+as Lunar's), while yours is showing. If anything goes wrong drawing it, the server's own sidebar comes back. It reads the sidebar once a tick and only paints
+each frame.
+
+## Disable debuffs
+
+**Visuals → World → Disable debuffs** hides debuff screen effects on your screen only: blindness and darkness fog (and
+darkness's pulsing), the nausea wobble and swirl, the carved-pumpkin mask, the freezing frame and (optional) the flames
+while burning. Each can be kept. The effects themselves still apply: blindness still stops sprinting, and fire still burns.
+
+## Rift haze
+
+**Visuals → World → Clear Rift haze** removes the thick purple fog in the Rift (the boss bar's world fog and the End's
+fog colour), so you see out to your render distance. **Normal sky** also swaps the End sky for a blue overworld sky.
+It only applies in the Rift (found from the boss bar, the sidebar or the dimension name) unless you turn on **Clear haze
+everywhere**. Visual only.
 
 ## Held item animations
 
@@ -297,7 +336,7 @@ Press **Save** to apply. With every value at its default the item looks exactly 
 
 ## Updates
 
-Click the refresh button next to the version in the bottom-right of the menu to check now, and again to install a new version; right-click it for the settings below. GolemAddons also checks [this repository's GitHub releases](https://github.com/TornadoTheQT/GolemAddons/releases) when the game starts (turn off **Check on start** to stop that) and shows a toast when a newer version is out.
+Click the refresh button next to the version in the bottom-right of the menu to check now, and again to install a new version; click the version number for the settings below and the changelog. GolemAddons also checks [this repository's GitHub releases](https://github.com/TornadoTheQT/GolemAddons/releases) when the game starts (turn off **Check on start** to stop that) and shows a toast when a newer version is out.
 
 - **Install** downloads the new jar, checks it, and puts it in your mods folder. It's used from the **next start**. The running game is never changed.
 - **Auto-update** (off by default) does the same by itself after each check.
@@ -381,7 +420,7 @@ worker/                    Cloudflare Worker: cosmetics (KV) and the party finde
 
 **Adding a feature:**
 1. Add a section to `GolemConfig`. If it renames or moves existing fields, bump `CURRENT_VERSION` and add a step to `ConfigMigration`.
-2. Add a card for it in `GolemHubScreen.init()`, and give it a screen that extends `EditorScreen`.
+2. Add a page for it to its section in `GolemHubScreen` (`SectionScreen.Tile`), with a screen that extends `EditorScreen`. Pages are laid out inside the section's pane automatically (shared working copy, scrolling, pinned footer).
 3. If it sells items, return its rules from `AutoSellRules.from` so the existing sell button and safety checks cover it. Otherwise, create a sibling class to `AutoSellFeature` that registers its own events, and construct it in `GolemAddonsClient`.
 
 Run `./gradlew test` for the validator, matcher, dragon catalog, migration, quick-sell command, exact-name fast-path and cosmetics validation/cache tests. Run `npm test` in `worker/` for the server's tests.

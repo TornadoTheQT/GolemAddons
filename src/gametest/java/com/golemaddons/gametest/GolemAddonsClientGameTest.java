@@ -28,8 +28,9 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 	private static final String[][] CATEGORIES = {
 			{"golemaddons.hub.selling", "golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.settings"},
 			{"golemaddons.hub.qol", "golemaddons.hub.autoclicker", "golemaddons.hub.camera", "golemaddons.hub.terminals", "golemaddons.hub.afk"},
-			{"golemaddons.hub.combat", "golemaddons.hub.riftborn", "golemaddons.hub.boneswap"},
-			{"golemaddons.hub.visuals", "golemaddons.hub.cosmetics", "golemaddons.hub.animations"}};
+			{"golemaddons.hub.combat", "golemaddons.hub.riftborn", "golemaddons.hub.boneswap", "golemaddons.hub.chatcleaner"},
+			{"golemaddons.hub.visuals", "golemaddons.hub.scoreboard", "golemaddons.hub.cosmetics", "golemaddons.hub.animations",
+					"golemaddons.hub.world"}};
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
@@ -44,12 +45,11 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 				click(context, category[0]);
 				context.waitTicks(30);
 				context.takeScreenshot(category[0].replace('.', '-'));
+				// Every page of the section is one click away in the sidebar.
 				for (int i = 1; i < category.length; i++) {
 					click(context, category[i]);
 					context.waitTicks(10);
 					context.takeScreenshot(category[i].replace('.', '-'));
-					context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE); // back to the category
-					context.waitTicks(30);
 				}
 			}
 			// Animation presets tab.
@@ -66,6 +66,7 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 			context.takeScreenshot("golemaddons-animations-presets");
 
+			scoreboardPages(context);
 			riftbornAndBones(context, world);
 			afkHud(context);
 
@@ -114,20 +115,8 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 			click(context, "golemaddons.hub.update.button");
 			context.waitTicks(60);
 			context.takeScreenshot("golemaddons-hub-update-check");
-			// Right-click opens the Updates screen with the release notes.
-			double[] icon = context.computeOnClient(mc -> {
-				for (var child : mc.screen.children()) {
-					if (child instanceof AbstractWidget w && w.getMessage().getContents() instanceof TranslatableContents t
-							&& t.getKey().equals("golemaddons.hub.update.button")) {
-						double scale = mc.getWindow().getGuiScale();
-						return new double[] {(w.getX() + w.getWidth() / 2.0) * scale, (w.getY() + w.getHeight() / 2.0) * scale};
-					}
-				}
-				throw new AssertionError("no update button");
-			});
-			context.getInput().setCursorPos(icon[0], icon[1]);
-			context.waitTick();
-			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			// The version number opens the Updates screen with the release notes.
+			click(context, "golemaddons.hub.version");
 			context.waitTicks(10);
 			context.takeScreenshot("golemaddons-updates-screen");
 
@@ -205,6 +194,51 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 		context.waitTicks(10);
 		found = context.computeOnClient(mc -> com.golemaddons.boss.Bosses.anchorCount());
 		if (found != 1) throw new AssertionError("a broken anchor should lose its outline, still " + found);
+		// The custom scoreboard over this sidebar, in every theme.
+		for (var theme : com.golemaddons.scoreboard.ScoreboardTheme.values()) {
+			context.runOnClient(mc -> {
+				GolemConfig next = GolemAddonsClient.config().get().copy();
+				next.scoreboard.enabled = true;
+				next.scoreboard.theme = theme.name();
+				GolemAddonsClient.config().save(next);
+			});
+			context.waitTicks(3);
+			if (context.computeOnClient(mc -> com.golemaddons.scoreboard.ScoreboardFeature.model()) == null) {
+				throw new AssertionError("custom scoreboard has no model with a sidebar showing");
+			}
+			context.takeScreenshot("golemaddons-scoreboard-" + theme.name().toLowerCase(java.util.Locale.ROOT));
+		}
+		// "Hide server's": other renderers see no sidebar, GolemAddons still does.
+		boolean hidden = context.computeOnClient(mc -> mc.level.getScoreboard()
+				.getDisplayObjective(net.minecraft.world.scores.DisplaySlot.SIDEBAR) == null);
+		if (!hidden) throw new AssertionError("server sidebar still visible to other renderers");
+		if (!context.computeOnClient(mc -> com.golemaddons.boss.Bosses.active(com.golemaddons.boss.BossType.RIFTBORN_SERAPH))) {
+			throw new AssertionError("boss helpers lost the sidebar while it is hidden");
+		}
+		// Disable debuffs: blindness and nausea on, their screen effects off.
+		server.runCommand("effect give @a minecraft:blindness 30 0 true");
+		server.runCommand("effect give @a minecraft:nausea 30 0 true");
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.render.disableDebuffs = true;
+			GolemAddonsClient.config().save(next);
+		});
+		context.waitTicks(40);
+		float nausea = context.computeOnClient(mc -> mc.player.getEffectBlendFactor(net.minecraft.world.effect.MobEffects.NAUSEA, 1f));
+		boolean blind = context.computeOnClient(mc -> mc.player.hasEffect(net.minecraft.world.effect.MobEffects.BLINDNESS));
+		if (!blind || nausea != 0f) throw new AssertionError("debuffs: blind=" + blind + " nausea blend=" + nausea);
+		context.takeScreenshot("golemaddons-debuffs-hidden");
+		server.runCommand("effect clear @a");
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.render.disableDebuffs = false;
+			GolemAddonsClient.config().save(next);
+		});
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.scoreboard.enabled = false;
+			GolemAddonsClient.config().save(next);
+		});
 		server.runCommand("scoreboard objectives remove ga");
 		context.waitTicks(10);
 		if (context.computeOnClient(mc -> com.golemaddons.boss.Bosses.anchorCount()) != 0) throw new AssertionError("outlines left after the fight");
@@ -324,6 +358,24 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 		return JsonParser.parseString(json).getAsJsonObject();
 	}
 
+	/** Scoreboard editor tabs and a long page scrolled in the section pane. */
+	private static void scoreboardPages(ClientGameTestContext context) {
+		context.setScreen(() -> new GolemHubScreen(null));
+		context.waitTicks(30);
+		click(context, "golemaddons.hub.visuals");
+		context.waitTicks(20);
+		click(context, "golemaddons.hub.scoreboard");
+		context.waitTicks(10);
+		click(context, "golemaddons.scoreboard.tabs", 0.5);
+		context.waitTicks(15);
+		context.takeScreenshot("golemaddons-scoreboard-background");
+		click(context, "golemaddons.scoreboard.tabs", 0.85);
+		context.waitTicks(15);
+		context.takeScreenshot("golemaddons-scoreboard-text");
+		click(context, "golemaddons.scoreboard.tabs", 0.15);
+		context.waitTicks(10);
+	}
+
 	/** Clicks the hub card whose title is {@code key} (cards are custom widgets, so find them by their label). */
 	private static void click(ClientGameTestContext context, String key) {
 		click(context, key, 0.5);
@@ -332,17 +384,26 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 	/** Clicks the widget labelled {@code key} at {@code fraction} of its width. */
 	private static void click(ClientGameTestContext context, String key, double fraction) {
 		double[] pos = context.computeOnClient(mc -> {
-			for (var child : mc.screen.children()) {
-				if (child instanceof AbstractWidget w && w.getMessage().getContents() instanceof TranslatableContents t
-						&& (t.getKey().equals(key))) {
-					double scale = mc.getWindow().getGuiScale();
-					return new double[] {(w.getX() + w.getWidth() * fraction) * scale, (w.getY() + w.getHeight() / 2.0) * scale};
-				}
+			double scale = mc.getWindow().getGuiScale();
+			double[] found = find(mc.screen, key, fraction, 0, 0, scale);
+			// Section screens show their page in a pane: look there too.
+			if (found == null && mc.screen instanceof com.golemaddons.ui.PaneHost host && host.page() != null) {
+				found = find(host.page(), key, fraction, host.pageOffsetX(), host.pageOffsetY(), scale);
 			}
-			throw new AssertionError("No card " + key);
+			if (found == null) throw new AssertionError("No card " + key);
+			return found;
 		});
 		context.getInput().setCursorPos(pos[0], pos[1]);
 		context.waitTick();
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+	}
+
+	private static double[] find(net.minecraft.client.gui.screens.Screen screen, String key, double fraction, int ox, int oy, double scale) {
+		for (var child : screen.children()) {
+			if (child instanceof AbstractWidget w && w.getMessage().getContents() instanceof TranslatableContents t && t.getKey().equals(key)) {
+				return new double[] {(ox + w.getX() + w.getWidth() * fraction) * scale, (oy + w.getY() + w.getHeight() / 2.0) * scale};
+			}
+		}
+		return null;
 	}
 }

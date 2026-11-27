@@ -7,13 +7,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.InputWithModifiers;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 /**
  * The hub's small refresh button. Left click checks for an update, or installs it when one is waiting; it spins
- * while working. Right click opens the update settings. Drawn on the {@link HubCanvas}.
+ * while working. The version number beside it opens the update settings. Drawn on the {@link HubCanvas}.
  */
 final class UpdateIcon extends AbstractButton {
 	/** Icon grid size, in canvas units; the icon is a ring with a gap and an arrowhead, one unit per pixel. */
@@ -22,18 +21,16 @@ final class UpdateIcon extends AbstractButton {
 
 	private final float scale;
 	private final float unitSize;
-	private final Runnable openSettings;
 	private final long[] lastFrame = new long[1];
 	private float hover;
 	private float angle;
 	private long pressedAt;
 
-	UpdateIcon(HubCanvas canvas, float ux, float uy, float size, Runnable openSettings) {
+	UpdateIcon(HubCanvas canvas, float ux, float uy, float size) {
 		super(Math.round(canvas.x(ux)), Math.round(canvas.y(uy)), canvas.size(size), canvas.size(size),
 				Component.translatable("golemaddons.hub.update.button"));
 		this.scale = canvas.scale();
 		this.unitSize = size;
-		this.openSettings = openSettings;
 	}
 
 	@Override
@@ -51,15 +48,6 @@ final class UpdateIcon extends AbstractButton {
 				}
 			}
 		}
-	}
-
-	@Override
-	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (active && visible && event.button() == 1 && isMouseOver(event.x(), event.y())) {
-			openSettings.run();
-			return true;
-		}
-		return super.mouseClicked(event, doubleClick);
 	}
 
 	/** A circular arrow: a ring with its right side open, ending in an arrowhead that points down (clockwise). */

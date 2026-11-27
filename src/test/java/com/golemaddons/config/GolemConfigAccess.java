@@ -8,4 +8,8 @@ public final class GolemConfigAccess {
 	public static void sanitize(GolemConfig config) {
 		config.sanitize();
 	}
+
+	public static void sanitize(GolemConfig.Scoreboard scoreboard) {
+		scoreboard.sanitize();
+	}
 }

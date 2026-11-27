@@ -224,7 +224,8 @@ final class CosmeticsScreen extends EditorScreen {
 		CosmeticsFeature f = feature();
 
 		if (previewX1 > previewX0) {
-			PlayerPreview.extract(graphics, minecraft, previewX0 + 3, previewY0 + PANEL_LABEL + 2, previewX1 - 3, previewY1 - 3, previewName());
+			PlayerPreview.extract(graphics, minecraft, previewX0 + 3, previewY0 + PANEL_LABEL + 2, previewX1 - 3, previewY1 - 3, previewName(),
+					screenOffsetX(), screenOffsetY());
 		}
 
 		boolean builtIn = f != null && f.hasBuiltInServer();

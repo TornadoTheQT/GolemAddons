@@ -103,8 +103,29 @@ final class HubStatus {
 	static HubCard.Status combat() {
 		GolemConfig c = config();
 		int on = (c.riftborn.anchors || c.riftborn.autoAttunement ? 1 : 0)
-				+ (c.boneSwap.enabled && !com.golemaddons.combat.BoneSwap.instance().key().isUnbound() ? 1 : 0);
-		return on > 0 ? countOn(on, 2) : off();
+				+ (c.boneSwap.enabled && !com.golemaddons.combat.BoneSwap.instance().key().isUnbound() ? 1 : 0)
+				+ (c.chatCleaner.enabled ? 1 : 0);
+		return on > 0 ? countOn(on, 3) : off();
+	}
+
+	static HubCard.Status chatCleaner() {
+		GolemConfig.ChatCleaner c = config().chatCleaner;
+		if (!c.enabled) return off();
+		int groups = (c.hitshield ? 1 : 0) + (c.mechanics ? 1 : 0) + (c.split ? 1 : 0) + (c.anchors ? 1 : 0) + (c.soulcry ? 1 : 0);
+		return new HubCard.Status(Component.translatable("golemaddons.hub.chatcleaner.status", groups), groups > 0 ? UiText.GREEN : UiText.GRAY);
+	}
+
+	static HubCard.Status scoreboard() {
+		GolemConfig.Scoreboard s = config().scoreboard;
+		if (!s.enabled) return off();
+		return new HubCard.Status(Component.translatable("golemaddons.hub.scoreboard.status",
+				Component.translatable(com.golemaddons.scoreboard.ScoreboardTheme.of(s.theme).key())), UiText.GREEN);
+	}
+
+	static HubCard.Status world() {
+		GolemConfig.Render r = config().render;
+		int on = (r.dragonHitboxes ? 1 : 0) + (r.clearRiftHaze ? 1 : 0) + (r.disableDebuffs ? 1 : 0);
+		return on > 0 ? countOn(on, 3) : off();
 	}
 
 	static HubCard.Status terminals() {
@@ -142,14 +163,11 @@ final class HubStatus {
 		return animationsOn() ? new HubCard.Status(Component.translatable("golemaddons.hub.animations.status.on"), UiText.GREEN) : off();
 	}
 
-	static HubCard.Status hitboxes() {
-		return config().render.dragonHitboxes
-				? new HubCard.Status(Component.translatable("golemaddons.hub.hitboxes.status.on"), UiText.GREEN) : off();
-	}
-
 	static HubCard.Status visuals() {
-		int on = (cosmeticsOn() ? 1 : 0) + (animationsOn() ? 1 : 0) + (config().render.dragonHitboxes ? 1 : 0);
-		return on > 0 ? countOn(on, 3) : off();
+		GolemConfig c = config();
+		int on = (cosmeticsOn() ? 1 : 0) + (animationsOn() ? 1 : 0) + (c.scoreboard.enabled ? 1 : 0)
+				+ (c.render.dragonHitboxes || c.render.clearRiftHaze || c.render.disableDebuffs ? 1 : 0);
+		return on > 0 ? countOn(on, 4) : off();
 	}
 
 	static HubCard.Status partyFinder() {

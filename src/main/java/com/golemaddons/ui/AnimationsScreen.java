@@ -442,7 +442,8 @@ final class AnimationsScreen extends EditorScreen {
 				rightArm ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
 				minecraft.level, minecraft.player, 0);
 		graphics.guiRenderState.addPicturesInPictureState(new HeldItemPreviewState(item, current().copy(), previewAttack(), rightArm,
-				minecraft.getWindow().getGuiScale(), previewX0, previewY0, previewX1, previewY1, graphics.scissorStack.peek()));
+				minecraft.getWindow().getGuiScale(), previewX0 + screenOffsetX(), previewY0 + screenOffsetY(), previewX1 + screenOffsetX(),
+				previewY1 + screenOffsetY(), graphics.scissorStack.peek()));
 		// Small crosshair, so offsets read relative to the centre of the view like in game.
 		int cx = (previewX0 + previewX1) / 2;
 		int cy = (previewY0 + previewY1) / 2;

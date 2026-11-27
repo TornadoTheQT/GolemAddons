@@ -26,6 +26,7 @@ import net.minecraft.resources.Identifier;
 
 public final class GolemAddonsClient implements ClientModInitializer {
 	public static final String MOD_ID = "golemaddons";
+	public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MOD_ID);
 
 	private static ConfigManager config;
 	private static KeyMapping openMenu;
@@ -76,6 +77,10 @@ public final class GolemAddonsClient implements ClientModInitializer {
 		AfkFeature.instance().register(config);
 		com.golemaddons.boss.Bosses.register(config);
 		com.golemaddons.combat.BoneSwap.instance().register(config, category);
+		com.golemaddons.chat.ChatCleanerFeature.register(config);
+		com.golemaddons.scoreboard.ScoreboardFeature.register(config);
+		com.golemaddons.render.RiftHaze.register(config);
+		com.golemaddons.render.Debuffs.register(config);
 		PictureInPictureRendererRegistry.register(ctx -> new HeldItemPreviewRenderer(ctx.bufferSource()));
 		UpdateChecker.instance().register(config);
 

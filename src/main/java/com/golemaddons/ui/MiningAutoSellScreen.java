@@ -100,14 +100,14 @@ final class MiningAutoSellScreen extends EditorScreen {
 	}
 
 	private void addRule() {
-		minecraft.setScreen(new RuleEditScreen(this, new SellRule(true, "", "", "", false), working.selling.protectHotbar, saved -> {
+		minecraft.setScreen(new RuleEditScreen(self(), new SellRule(true, "", "", "", false), working.selling.protectHotbar, saved -> {
 			rules().add(saved);
 			page = Integer.MAX_VALUE; // clamped to the last page on init
 		}));
 	}
 
 	private void editRule(SellRule rule) {
-		minecraft.setScreen(new RuleEditScreen(this, rule.copy(), working.selling.protectHotbar, saved -> {
+		minecraft.setScreen(new RuleEditScreen(self(), rule.copy(), working.selling.protectHotbar, saved -> {
 			int index = rules().indexOf(rule);
 			if (index >= 0) {
 				rules().set(index, saved);
@@ -120,7 +120,7 @@ final class MiningAutoSellScreen extends EditorScreen {
 			if (confirmed) {
 				rules().remove(rule);
 			}
-			minecraft.setScreen(this);
+			minecraft.setScreen(self());
 		}, Component.translatable("golemaddons.config.delete.title"),
 				Component.translatable("golemaddons.config.delete.message", rule.displayName())));
 	}
