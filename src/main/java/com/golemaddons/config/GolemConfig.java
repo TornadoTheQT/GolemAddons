@@ -34,6 +34,7 @@ public final class GolemConfig {
 	public BoneSwap boneSwap = new BoneSwap();
 	public ChatCleaner chatCleaner = new ChatCleaner();
 	public Scoreboard scoreboard = new Scoreboard();
+	public PetSeller petSeller = new PetSeller();
 
 	/** Where a movable HUD sits (fractions of the screen, so it survives resizes) and how big it is. */
 	public static final class HudPosition {
@@ -148,6 +149,60 @@ public final class GolemConfig {
 			anchorRadius = Math.clamp(anchorRadius, 4, MAX_RADIUS);
 			anchorLineWidth = Float.isFinite(anchorLineWidth) ? Math.clamp(anchorLineWidth, 1f, 10f) : 3f;
 			attunementMarginMs = Math.clamp(attunementMarginMs, 0, 500);
+		}
+	}
+
+	/** Pet seller: sells pets by rarity (the colour of the pet's name), up to a level. Nothing is picked by default. */
+	public static final class PetSeller {
+		public static final int MAX_LEVEL = 200;
+
+		public boolean enabled = true;
+		public boolean common = false;
+		public boolean uncommon = false;
+		public boolean rare = false;
+		public boolean epic = false;
+		public boolean legendary = false;
+		public boolean mythic = false;
+		/** Only pets at or below this level are sold. */
+		public int maxLevel = 100;
+
+		public boolean sells(com.golemaddons.autosell.PetRarity r) {
+			return switch (r) {
+				case COMMON -> common;
+				case UNCOMMON -> uncommon;
+				case RARE -> rare;
+				case EPIC -> epic;
+				case LEGENDARY -> legendary;
+				case MYTHIC -> mythic;
+			};
+		}
+
+		public void set(com.golemaddons.autosell.PetRarity r, boolean v) {
+			switch (r) {
+				case COMMON -> common = v;
+				case UNCOMMON -> uncommon = v;
+				case RARE -> rare = v;
+				case EPIC -> epic = v;
+				case LEGENDARY -> legendary = v;
+				case MYTHIC -> mythic = v;
+			}
+		}
+
+		public PetSeller copy() {
+			PetSeller c = new PetSeller();
+			c.enabled = enabled;
+			c.common = common;
+			c.uncommon = uncommon;
+			c.rare = rare;
+			c.epic = epic;
+			c.legendary = legendary;
+			c.mythic = mythic;
+			c.maxLevel = maxLevel;
+			return c;
+		}
+
+		void sanitize() {
+			maxLevel = Math.clamp(maxLevel, 1, MAX_LEVEL);
 		}
 	}
 
@@ -882,6 +937,7 @@ public final class GolemConfig {
 		c.boneSwap = boneSwap.copy();
 		c.chatCleaner = chatCleaner.copy();
 		c.scoreboard = scoreboard.copy();
+		c.petSeller = petSeller.copy();
 		return c;
 	}
 
@@ -902,6 +958,8 @@ public final class GolemConfig {
 		if (boneSwap == null) boneSwap = new BoneSwap();
 		if (chatCleaner == null) chatCleaner = new ChatCleaner();
 		if (scoreboard == null) scoreboard = new Scoreboard();
+		if (petSeller == null) petSeller = new PetSeller();
+		petSeller.sanitize();
 		chatCleaner.sanitize();
 		scoreboard.sanitize();
 		afk.sanitize();

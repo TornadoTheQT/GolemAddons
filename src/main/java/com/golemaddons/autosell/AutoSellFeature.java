@@ -147,7 +147,7 @@ public final class AutoSellFeature {
 			return;
 		}
 		AutoSellRules current = rules;
-		if (current.matcher().isEmpty()) {
+		if (current.sellsNothing()) {
 			button.active = false;
 			button.setMessage(Component.translatable("golemaddons.autosell.button.no_rules"));
 			return;
@@ -169,7 +169,7 @@ public final class AutoSellFeature {
 			return; // a run on another screen is still winding down
 		}
 		AutoSellRules current = rules;
-		if (mc.screen != screen || current.matcher().isEmpty() || !current.isSellScreenTitle(screen.getTitle().getString())) {
+		if (mc.screen != screen || current.sellsNothing() || !current.isSellScreenTitle(screen.getTitle().getString())) {
 			return;
 		}
 		lastResult = null;
@@ -209,7 +209,7 @@ public final class AutoSellFeature {
 			problem = "golemaddons.quick.error.off";
 		} else if (!rules.titleResult().valid()) {
 			problem = "golemaddons.quick.error.title";
-		} else if (rules.matcher().isEmpty()) {
+		} else if (rules.sellsNothing()) {
 			problem = "golemaddons.quick.error.nothing";
 		}
 		if (problem != null) {

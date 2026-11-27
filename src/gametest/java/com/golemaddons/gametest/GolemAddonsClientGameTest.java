@@ -26,7 +26,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 public class GolemAddonsClientGameTest implements FabricClientGameTest {
 	/** Each top-level category card and the feature tiles inside it (tiles that open a screen). */
 	private static final String[][] CATEGORIES = {
-			{"golemaddons.hub.selling", "golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.settings"},
+			{"golemaddons.hub.selling", "golemaddons.hub.mining", "golemaddons.hub.dragon", "golemaddons.hub.pets", "golemaddons.hub.settings"},
 			{"golemaddons.hub.qol", "golemaddons.hub.autoclicker", "golemaddons.hub.camera", "golemaddons.hub.terminals", "golemaddons.hub.afk"},
 			{"golemaddons.hub.combat", "golemaddons.hub.riftborn", "golemaddons.hub.boneswap", "golemaddons.hub.chatcleaner"},
 			{"golemaddons.hub.visuals", "golemaddons.hub.scoreboard", "golemaddons.hub.cosmetics", "golemaddons.hub.animations",
@@ -268,6 +268,27 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 		int end = context.computeOnClient(mc -> mc.player.getInventory().getSelectedSlot());
 		if (end != 0) throw new AssertionError("bone swap should end on slot 1, ended on " + (end + 1));
 		if (seen[2] + seen[4] + seen[6] == 0) throw new AssertionError("bone swap never selected a bone");
+
+		// Pet seller: a legendary and an epic pet; only legendary picked.
+		server.runCommand("item replace entity @p inventory.10 with minecraft:bone[custom_name=[{\"text\":\"[Lvl 5] \",\"color\":\"gray\",\"italic\":false},{\"text\":\"Wolf\",\"color\":\"gold\"}]]");
+		server.runCommand("item replace entity @p inventory.11 with minecraft:bone[custom_name=[{\"text\":\"[Lvl 5] \",\"color\":\"gray\",\"italic\":false},{\"text\":\"Bee\",\"color\":\"dark_purple\"}]]");
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.petSeller.legendary = true;
+			GolemAddonsClient.config().save(next);
+		});
+		context.waitTicks(5);
+		boolean[] pets = context.computeOnClient(mc -> {
+			var rules = com.golemaddons.autosell.AutoSellRules.from(GolemAddonsClient.config().get());
+			var inv = mc.player.getInventory();
+			return new boolean[] {rules.pets().matches(inv.getItem(19)), rules.pets().matches(inv.getItem(20))};
+		});
+		if (!pets[0] || pets[1]) throw new AssertionError("pet seller: legendary=" + pets[0] + " epic=" + pets[1]);
+		context.runOnClient(mc -> {
+			GolemConfig next = GolemAddonsClient.config().get().copy();
+			next.petSeller.legendary = false;
+			GolemAddonsClient.config().save(next);
+		});
 	}
 
 	private static void afkHud(ClientGameTestContext context) {

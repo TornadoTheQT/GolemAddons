@@ -63,13 +63,15 @@ public final class InventoryScan {
 	}
 
 	public static boolean isSellable(Slot slot, Player player, AutoSellRules rules) {
-		return protection(slot, player, rules.protectHotbar()) == null && stackMatches(rules.matcher(), slot.getItem());
+		if (protection(slot, player, rules.protectHotbar()) != null) return false;
+		ItemStack stack = slot.getItem();
+		return stackMatches(rules.matcher(), stack) || rules.pets().matches(stack);
 	}
 
 	/** Menu slot indexes of every sellable stack, in menu order. */
 	public static List<Integer> sellableSlots(AbstractContainerMenu menu, Player player, AutoSellRules rules) {
 		List<Integer> out = new ArrayList<>();
-		if (rules.matcher().isEmpty()) {
+		if (rules.sellsNothing()) {
 			return out;
 		}
 		for (int i = 0; i < menu.slots.size(); i++) {

@@ -5,6 +5,7 @@ A client-side Fabric mod for **Minecraft 26.1.2**. Press **K** to open the Golem
 - **Selling**
   - **Mining Auto-Sell**: sells items matching your own regex rules, e.g. Enchanted Obsidian.
   - **Dragon Seller**: sells dragon armor, fragments and other dragon drops. You pick which dragons.
+  - **Pet Seller**: sells pets by rarity (the colour of the pet's name: white common, green uncommon, blue rare, purple epic, gold legendary, pink mythic), up to a level you set. No regex needed; nothing is picked by default.
   - **Sell Settings**: the sell screen title, click delay and hotbar protection, which both sellers use, plus the **Quick sell** key.
 - **QoL**
   - **Auto Clicker**: left-clicks at a random speed between two CPS values while you hold a key.

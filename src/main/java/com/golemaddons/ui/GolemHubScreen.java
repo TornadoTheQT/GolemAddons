@@ -147,6 +147,8 @@ public final class GolemHubScreen extends Screen {
 						HubStatus::mining, MiningAutoSellScreen::new),
 				new SectionScreen.Tile("golemaddons.hub.dragon", new ItemStack(Items.DRAGON_HEAD), UiText.ACCENT,
 						HubStatus::dragon, DragonSellerScreen::new),
+				new SectionScreen.Tile("golemaddons.hub.pets", new ItemStack(Items.LEAD), UiText.GOLD,
+						HubStatus::pets, PetSellerScreen::new),
 				new SectionScreen.Tile("golemaddons.hub.settings", new ItemStack(Items.COMPARATOR), UiText.GOLD,
 						HubStatus::sellSettings, SellSettingsScreen::new)));
 	}

@@ -43,6 +43,14 @@ final class HubStatus {
 				DragonCatalog.DragonType.values().length), UiText.ACCENT_2);
 	}
 
+	static HubCard.Status pets() {
+		GolemConfig.PetSeller p = config().petSeller;
+		int on = 0;
+		for (com.golemaddons.autosell.PetRarity r : com.golemaddons.autosell.PetRarity.values()) if (p.sells(r)) on++;
+		if (!p.enabled || on == 0) return off();
+		return new HubCard.Status(Component.translatable("golemaddons.hub.pets.status", on), UiText.GREEN);
+	}
+
 	static HubCard.Status sellSettings() {
 		return sellTitleSet()
 				? new HubCard.Status(Component.translatable("golemaddons.hub.settings.status.ok"), UiText.GREEN)
