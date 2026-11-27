@@ -72,8 +72,9 @@ final class RiftbornScreen extends EditorScreen {
 		toggle(ix, rowY, half, "golemaddons.riftborn.auto_attunement", r.autoAttunement, v -> r.autoAttunement = v);
 		toggle(rx, rowY, half, "golemaddons.riftborn.switch_dagger", r.switchDagger, v -> r.switchDagger = v);
 		rowY += ROW + 4;
-		slider(ix, rowY, inner, "golemaddons.riftborn.margin", 0, 300, 10, 60, () -> r.attunementMarginMs, v -> r.attunementMarginMs = (int) v,
+		slider(ix, rowY, half, "golemaddons.riftborn.margin", 0, 300, 10, 60, () -> r.attunementMarginMs, v -> r.attunementMarginMs = (int) v,
 				"+%.0f ms");
+		toggle(rx, rowY + 1, half, "golemaddons.riftborn.action_bar", r.actionBarHint, v -> r.actionBarHint = v);
 		hintY = y + attuneH + 4;
 		addFooter(saveButton(), cancelButton());
 	}

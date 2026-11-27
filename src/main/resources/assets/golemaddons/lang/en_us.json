@@ -693,7 +693,7 @@
 	"golemaddons.riftborn.panel.anchors": "Anchors",
 	"golemaddons.riftborn.panel.attunement": "Auto attunement",
 	"golemaddons.riftborn.anchors": "Anchor outlines",
-	"golemaddons.riftborn.anchors.tooltip": "After \"It hangs itself on N anchors\", outline every sea lantern nearby until it breaks.",
+	"golemaddons.riftborn.anchors.tooltip": "After \"It hangs itself on N anchors\", outline every sea lantern nearby until it breaks. \"Every anchor is down\" clears them.",
 	"golemaddons.riftborn.through_walls": "Through walls",
 	"golemaddons.riftborn.through_walls.tooltip": "Draw the outlines on top of everything.",
 	"golemaddons.riftborn.radius": "Search range",
@@ -708,7 +708,7 @@
 	"golemaddons.riftborn.switch_dagger.tooltip": "Also change your held item to the dagger the target needs. Off: only switch attunement on the dagger you hold.",
 	"golemaddons.riftborn.margin": "Extra wait",
 	"golemaddons.riftborn.margin.tooltip": "Added to the 0.3 s attunement cooldown, for ping.",
-	"golemaddons.riftborn.hint": "Active during the fight only. /gaseraph shows what it reads.",
+	"golemaddons.riftborn.hint": "Active while the sidebar shows Riftborn Seraph. /gaseraph shows what it reads.",
 	"golemaddons.riftborn.attunement.unreadable": "Auto attunement can't tell which attunement your dagger is in. Hold it and run /gaseraph item, then send that to the developer.",
 	"golemaddons.boneswap.title": "Bone Swap",
 	"golemaddons.boneswap.panel": "Bone swap",
@@ -724,5 +724,7 @@
 	"golemaddons.boneswap.delay.tooltip": "Time between two throws.",
 	"golemaddons.boneswap.variation": "Variation",
 	"golemaddons.boneswap.variation.tooltip": "Each delay is randomly changed by up to this much either way.",
-	"golemaddons.boneswap.hint": "Selects each Bonemerang slot, right-clicks it, then goes to the end slot."
+	"golemaddons.boneswap.hint": "Selects each Bonemerang slot, right-clicks it, then goes to the end slot.",
+	"golemaddons.riftborn.action_bar": "Follow action bar",
+	"golemaddons.riftborn.action_bar.tooltip": "When you aren't aiming at a marked half, switch to what the line above your hotbar says (\"Fleshrend Dagger · Right-click → FLESH\")."
 }

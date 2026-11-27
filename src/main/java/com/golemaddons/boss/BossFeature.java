@@ -15,6 +15,10 @@ public interface BossFeature {
 	default void onChat(String line, GolemConfig config) {
 	}
 
+	/** An action bar message (the line above the hotbar) during the fight, as plain text. */
+	default void onActionBar(String line, GolemConfig config) {
+	}
+
 	/** Every client tick during the fight. */
 	default void onTick(Minecraft mc, GolemConfig config) {
 	}

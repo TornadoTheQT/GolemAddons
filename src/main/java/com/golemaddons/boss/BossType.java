@@ -7,26 +7,29 @@ import java.util.List;
  * here, then write {@link BossFeature}s for it and list them in {@link Bosses}.
  */
 public enum BossType {
-	/** Dragsim's Riftborn Seraph; the sidebar shows it as "Voidgloom Seraph V" with "Slay the boss!". */
-	RIFTBORN_SERAPH("Riftborn Seraph", List.of("Voidgloom Seraph V", "Slay the boss!"));
+	/** Dragsim's Riftborn Seraph: the sidebar shows "Riftborn Seraph" (or "Voidgloom Seraph V") and "Slay the boss!". */
+	RIFTBORN_SERAPH("Riftborn Seraph", List.of(List.of("Riftborn Seraph", "Voidgloom Seraph"), List.of("Slay the boss!")));
 
 	public final String displayName;
-	/** Every one of these must appear (as part of a line) for the fight to count as on. */
-	private final List<String> sidebarLines;
+	/** Each group needs one of its texts somewhere in the sidebar (as part of a line) for the fight to count as on. */
+	private final List<List<String>> sidebarLines;
 
-	BossType(String displayName, List<String> sidebarLines) {
+	BossType(String displayName, List<List<String>> sidebarLines) {
 		this.displayName = displayName;
 		this.sidebarLines = sidebarLines;
 	}
 
 	public boolean matches(List<String> lines) {
-		for (String wanted : sidebarLines) {
+		for (List<String> anyOf : sidebarLines) {
 			boolean found = false;
 			for (String line : lines) {
-				if (line.contains(wanted)) {
-					found = true;
-					break;
+				for (String wanted : anyOf) {
+					if (line.contains(wanted)) {
+						found = true;
+						break;
+					}
 				}
+				if (found) break;
 			}
 			if (!found) return false;
 		}

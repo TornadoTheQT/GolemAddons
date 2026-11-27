@@ -162,7 +162,7 @@ public class GolemAddonsClientGameTest implements FabricClientGameTest {
 		server.runCommand("scoreboard objectives add ga dummy \"DRAGSIM\"");
 		server.runCommand("scoreboard objectives setdisplay sidebar ga");
 		server.runCommand("team add t1");
-		server.runCommand("team modify t1 prefix \"Voidgloom Seraph V\"");
+		server.runCommand("team modify t1 prefix \"Riftborn Seraph\"");
 		server.runCommand("team join t1 boss1");
 		server.runCommand("team add t2");
 		server.runCommand("team modify t2 prefix \"Slay the boss!\"");

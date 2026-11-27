@@ -36,6 +36,21 @@ public enum Attunement {
 		}
 	}
 
+	private static final Pattern HINT = Pattern.compile("(Fleshrend|Voidfang) Dagger\\s*[\u00b7\u2022-]\\s*Right-click\\s*(?:\u2192|->)\\s*\\W*\\s*(FLESH|ICHOR|VOID|AETHER)",
+			Pattern.CASE_INSENSITIVE);
+
+	/**
+	 * The attunement the action bar says to switch to: "Fleshrend Dagger · Right-click → ♥ FLESH | 39s" means the
+	 * Fleshrend Dagger should be in FLESH. Null for any other message.
+	 */
+	public static Attunement fromHint(String actionBar) {
+		if (actionBar == null) return null;
+		java.util.regex.Matcher m = HINT.matcher(actionBar);
+		if (!m.find()) return null;
+		Attunement a = valueOf(m.group(2).toUpperCase(Locale.ROOT));
+		return a.dagger().nameFragment.equalsIgnoreCase(m.group(1)) ? a : null;
+	}
+
 	public Dagger dagger() {
 		return this == FLESH || this == ICHOR ? Dagger.FLESHREND : Dagger.VOIDFANG;
 	}

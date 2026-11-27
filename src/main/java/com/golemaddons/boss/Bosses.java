@@ -34,10 +34,12 @@ public final class Bosses {
 						.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("target").executes(c -> debugTarget()))
 						.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands.literal("status").executes(c -> debugStatus()))));
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-			if (overlay || active.isEmpty()) return;
+			if (active.isEmpty()) return;
 			String line = Sidebar.clean(message.getString());
 			for (BossFeature f : FEATURES) {
-				if (active.contains(f.boss())) f.onChat(line, config);
+				if (!active.contains(f.boss())) continue;
+				if (overlay) f.onActionBar(line, config);
+				else f.onChat(line, config);
 			}
 		});
 	}

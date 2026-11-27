@@ -124,6 +124,8 @@ public final class GolemConfig {
 		public int attunementMarginMs = 60;
 		/** Also switch to the dagger the target needs. */
 		public boolean switchDagger = true;
+		/** When not aiming at a marked half, follow the action bar's "Right-click → FLESH" instruction. */
+		public boolean actionBarHint = true;
 
 		public Riftborn copy() {
 			Riftborn c = new Riftborn();
@@ -136,6 +138,7 @@ public final class GolemConfig {
 			c.autoAttunement = autoAttunement;
 			c.attunementMarginMs = attunementMarginMs;
 			c.switchDagger = switchDagger;
+			c.actionBarHint = actionBarHint;
 			return c;
 		}
 

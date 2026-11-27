@@ -12,8 +12,21 @@ class RiftbornTest {
 	@Test
 	void fightIsRecognisedFromTheSidebar() {
 		assertTrue(BossType.RIFTBORN_SERAPH.matches(List.of("DRAGSIM", "Slayer Quest", "Voidgloom Seraph V", "Slay the boss!")));
+		// What the real sidebar shows.
+		assertTrue(BossType.RIFTBORN_SERAPH.matches(List.of("DragSim", "Name: qtTornado", "\u23e3 Dragon's Den", "Riftborn Seraph", "Slay the boss!",
+				"dragsim.co")));
+		assertFalse(BossType.RIFTBORN_SERAPH.matches(List.of("Riftborn Seraph", "Kill 200 Endermen")));
 		assertFalse(BossType.RIFTBORN_SERAPH.matches(List.of("Voidgloom Seraph V", "Combat XP 120/2000")));
 		assertEquals("Voidgloom Seraph V", Sidebar.clean("§5Voidgloom §cSeraph V​"));
+	}
+
+	@Test
+	void actionBarHint() {
+		assertEquals(Attunement.FLESH, Attunement.fromHint("Fleshrend Dagger \u00b7 Right-click \u2192 \u2764 FLESH | 39s"));
+		assertEquals(Attunement.AETHER, Attunement.fromHint("2,069/2,931\u2764   Voidfang Dagger \u00b7 Right-click \u2192 \u2726 AETHER | 12s   Mana 2,699/2,699"));
+		assertNull(Attunement.fromHint("Fleshrend Dagger \u00b7 Right-click \u2192 VOID"), "a dagger can't take the other's attunement");
+		assertNull(Attunement.fromHint("Anchors left: 3 - 11s"));
+		assertTrue(RiftbornAnchors.ALL_DOWN.matcher("Every anchor is down. It drops out of the air.").find());
 	}
 
 	@Test

@@ -28,6 +28,10 @@ final class AutoAttunement implements BossFeature {
 	private long lastSwapAt = Long.MIN_VALUE / 2;
 	private String swappedFrom;
 	private boolean warnedUnreadable;
+	/** The last action bar hint and when it was seen. */
+	private Attunement hint;
+	private long hintAt;
+	static final long HINT_VALID_MS = 1500;
 
 	@Override
 	public BossType boss() {
@@ -35,10 +39,21 @@ final class AutoAttunement implements BossFeature {
 	}
 
 	@Override
+	public void onActionBar(String line, GolemConfig config) {
+		Attunement a = Attunement.fromHint(line);
+		if (a != null) {
+			hint = a;
+			hintAt = Util.getMillis();
+		}
+	}
+
+	@Override
 	public void onTick(Minecraft mc, GolemConfig config) {
 		GolemConfig.Riftborn r = config.riftborn;
 		if (!r.autoAttunement || mc.player == null || mc.gameMode == null || mc.screen != null) return;
 		Attunement need = targetMark(mc);
+		// Not aiming at a marked half: follow the action bar's instruction, while it's fresh.
+		if (need == null && r.actionBarHint && hint != null && Util.getMillis() - hintAt < HINT_VALID_MS) need = hint;
 		if (need == null) return;
 		var inventory = mc.player.getInventory();
 		int slot = daggerSlot(mc, need.dagger());
