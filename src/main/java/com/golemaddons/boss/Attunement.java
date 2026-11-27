@@ -45,11 +45,17 @@ public enum Attunement {
 	}
 
 	/**
-	 * The mark in a mob's name tag ("VOID", "FLESH ♥ 3"...). Written in capitals on the tag, so only capital words
-	 * count: a lower-case "void" in a name like "Voidling" is not a mark.
+	 * The mark in a mob's name tag. Dragsim sends the Riftborn halves' tags with their text reversed
+	 * ("[Lv8000] reggaD gnafdioV • DIOV ☯ 960M/960M" is "Voidfang Dagger • VOID"), so the text is read both ways.
+	 * Marks are written in capitals, so only capital words count: a lower-case "void" in a name is not a mark.
 	 */
 	public static Attunement markIn(String text) {
 		if (text == null) return null;
+		Attunement forward = markInForward(text);
+		return forward != null ? forward : markInForward(new StringBuilder(text).reverse().toString());
+	}
+
+	private static Attunement markInForward(String text) {
 		Attunement found = null;
 		for (Attunement a : values()) {
 			if (Pattern.compile("\\b" + a.name() + "\\b").matcher(text).find()) {
