@@ -115,7 +115,7 @@ final class AfkScreen extends EditorScreen {
 		counts.put("Old Dragon", 3);
 		counts.put("Wise Dragon", 2);
 		counts.put("Superior Dragon", 1);
-		return new AfkHud.Model("2h 14m", Component.translatable("golemaddons.afk.status.afk"), 0xFF55FF55, counts, 6, 1);
+		return new AfkHud.Model("2h 14m", Component.translatable("golemaddons.afk.status.afk"), 0xFF55FF55, counts, 6, 6, 1);
 	}
 
 	private void toggle(int x, int y, int w, String key, boolean value, Consumer<Boolean> onChange) {

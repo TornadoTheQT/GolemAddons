@@ -268,7 +268,7 @@ public final class AfkFeature {
 				}
 			}
 		}
-		return new AfkHud.Model(elapsed, status, color, tracker.counts(), tracker.total(), on ? sess.reconnects() : 0);
+		return new AfkHud.Model(elapsed, status, color, tracker.counts(), tracker.total(), tracker.credits(), on ? sess.reconnects() : 0);
 	}
 
 	private Component statusLine(long now) {

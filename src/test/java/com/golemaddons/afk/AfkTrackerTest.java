@@ -29,47 +29,56 @@ class AfkTrackerTest {
 		assertEquals("Old Dragon", AfkTracker.latest(menu("Old Dragon")));
 	}
 
-	@Test
-	void countsEachRewardOnceEvenTheSameDragonTwice() {
-		for (int direction : new int[] {-1, 1}) {
-			AfkTracker t = new AfkTracker();
-			long now = 0;
-			int timer = direction < 0 ? 900 : 0;
-			// What was there before the session is not counted.
-			assertNull(t.observe(now, title(timer), menu("Old Dragon")));
-			String latest = "Old Dragon";
-			String[] rewards = {"Wise Dragon", "Wise Dragon", "Superior Dragon", "Old Dragon"};
-			for (String reward : rewards) {
-				for (int s = 0; s < 899; s++) {
-					now += 1000;
-					timer += direction;
-					assertNull(t.observe(now, title(timer), menu(latest)), "nothing between rewards");
-				}
-				now += 1000;
-				timer = direction < 0 ? 900 : 0; // the timer starts over with each reward
-				latest = reward;
-				String got = t.observe(now, title(timer), menu(latest));
-				// The mark may arrive a moment after the timer reset.
-				if (got == null) got = t.observe(now + 300, title(timer), menu(latest));
-				assertEquals(reward, got, "direction " + direction);
-			}
-			assertEquals(4, t.total());
-			assertEquals(2, t.counts().get("Wise Dragon"));
-		}
+	private static List<AfkTracker.Slot> menu(String latestOn, int credits) {
+		List<AfkTracker.Slot> m = new java.util.ArrayList<>(menu(latestOn));
+		m.add(new AfkTracker.Slot("NEXT REWARD IN 03:11", List.of("Keep this menu open.", "Movement does not reset your timer.",
+				"Credits earned this session: " + credits)));
+		return m;
 	}
 
 	@Test
-	void reopeningTheMenuIsNotAReward() {
+	void countsFromTheMenusCredits() {
 		AfkTracker t = new AfkTracker();
-		t.observe(0, title(500), menu("Old Dragon"));
-		t.observe(1000, title(499), menu("Old Dragon"));
+		long now = 0;
+		// Credits earned before we were watching aren't counted.
+		assertNull(t.observe(now, title(600), menu("Old Dragon", 5)));
+		// Lots of ticks, timer running, reopen in between: nothing.
+		for (int i = 0; i < 300; i++) assertNull(t.observe(now += 1000, title(599 - i), menu("Old Dragon", 5)));
 		t.menuOpened();
-		// Reopened after a disconnect: the timer started over, no new reward.
+		assertNull(t.observe(now += 1000, title(900), menu("Old Dragon", 5)));
+		// A reward where the mark moves with the credits.
+		assertEquals("Wise Dragon", t.observe(now += 1000, title(900), menu("Wise Dragon", 6)));
+		// The credits go up before the mark moves: wait for the mark.
+		assertNull(t.observe(now += 50, title(900), menu("Wise Dragon", 7)));
+		assertEquals("Superior Dragon", t.observe(now += 50, title(900), menu("Superior Dragon", 7)));
+		// The same dragon twice: counted once the wait is over.
+		assertNull(t.observe(now += 50, title(900), menu("Superior Dragon", 8)));
+		assertEquals("Superior Dragon", t.observe(now += AfkTracker.MARK_WAIT_MS, title(899), menu("Superior Dragon", 8)));
+		// Timer jumps never count.
+		assertNull(t.observe(now += 1000, title(10), menu("Superior Dragon", 8)));
+		assertNull(t.observe(now += 1000, title(900), menu("Superior Dragon", 8)));
+		assertEquals(3, t.total());
+		assertEquals(2, t.counts().get("Superior Dragon"));
+		assertEquals(3, t.credits());
+		// A reconnect starts the server's count over: its new credits are new rewards.
+		t.menuOpened();
+		assertNull(t.observe(now += 60_000, title(900), menu("Superior Dragon", 0)));
+		assertEquals("Old Dragon", t.observe(now += 1000, title(900), menu("Old Dragon", 1)));
+		assertEquals(4, t.total());
+	}
+
+	@Test
+	void withoutCreditsTheMarkMovingCounts() {
+		AfkTracker t = new AfkTracker();
+		assertNull(t.observe(0, title(500), menu("Old Dragon")));
+		assertNull(t.observe(1000, title(499), menu("Old Dragon")));
+		t.menuOpened();
+		// Reopened: the timer is different, no new reward.
 		assertNull(t.observe(60_000, title(900), menu("Old Dragon")));
-		assertNull(t.observe(61_000, title(899), menu("Old Dragon")));
-		assertEquals(0, t.total());
-		// But a reward that landed while we weren't looking still counts once the mark moved.
-		t.menuOpened();
-		assertEquals("Wise Dragon", t.observe(90_000, title(900), menu("Wise Dragon")));
+		assertEquals("Wise Dragon", t.observe(61_000, title(899), menu("Wise Dragon")));
+		// Countdown starting over from near zero: the same dragon again.
+		assertNull(t.observe(62_000, title(5), menu("Wise Dragon")));
+		assertEquals("Wise Dragon", t.observe(63_000, title(900), menu("Wise Dragon")));
+		assertEquals(2, t.total());
 	}
 }

@@ -13,7 +13,7 @@ public final class AfkHud {
 	private static final int LINE = 10;
 
 	/** What the panel shows. */
-	public record Model(String elapsed, Component status, int statusColor, Map<String, Integer> counts, int total, int reconnects) {
+	public record Model(String elapsed, Component status, int statusColor, Map<String, Integer> counts, int total, int credits, int reconnects) {
 	}
 
 	private AfkHud() {
@@ -62,6 +62,7 @@ public final class AfkHud {
 			}
 		}
 		out.add(new Line("Total", 0xFFFFFFFF, Integer.toString(m.total()), 0xFF5CE1C6));
+		if (m.credits() > 0 && m.credits() != m.total()) out.add(new Line("Loot credits", 0xFFA0A0A0, Integer.toString(m.credits()), 0xFFE0B04A));
 		if (m.reconnects() > 0) out.add(new Line("Reconnects", 0xFFA0A0A0, Integer.toString(m.reconnects()), 0xFFE0B04A));
 		return out;
 	}
